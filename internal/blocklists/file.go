@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/r7wx/luna-dns/internal/entry"
-	"github.com/r7wx/luna-dns/internal/tree"
+	"github.com/wiredlush/luna-dns/internal/entry"
+	"github.com/wiredlush/luna-dns/internal/tree"
 )
 
 func (b *Blocklists) processFile(blocklist string, hosts *tree.Tree) {

@@ -1,7 +1,7 @@
 package tree
 
 import (
-	"github.com/r7wx/luna-dns/internal/entry"
+	"github.com/wiredlush/luna-dns/internal/entry"
 )
 
 // Insert - Insert new entry in DNS tree

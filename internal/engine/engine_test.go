@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"github.com/r7wx/luna-dns/internal/config"
+	"github.com/wiredlush/luna-dns/internal/config"
 )
 
 type testResponseWrtiter struct {

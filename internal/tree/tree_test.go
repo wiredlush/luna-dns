@@ -3,7 +3,7 @@ package tree
 import (
 	"testing"
 
-	"github.com/r7wx/luna-dns/internal/entry"
+	"github.com/wiredlush/luna-dns/internal/entry"
 )
 
 func TestBasics(t *testing.T) {

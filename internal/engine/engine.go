@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"github.com/r7wx/luna-dns/internal/blocklists"
-	"github.com/r7wx/luna-dns/internal/cache"
-	"github.com/r7wx/luna-dns/internal/config"
-	"github.com/r7wx/luna-dns/internal/entry"
-	"github.com/r7wx/luna-dns/internal/tree"
+	"github.com/wiredlush/luna-dns/internal/blocklists"
+	"github.com/wiredlush/luna-dns/internal/cache"
+	"github.com/wiredlush/luna-dns/internal/config"
+	"github.com/wiredlush/luna-dns/internal/entry"
+	"github.com/wiredlush/luna-dns/internal/tree"
 )
 
 // Engine - DNS Engine

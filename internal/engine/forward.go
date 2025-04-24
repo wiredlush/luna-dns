@@ -7,7 +7,7 @@ import (
 	"log"
 
 	"github.com/miekg/dns"
-	"github.com/r7wx/luna-dns/internal/config"
+	"github.com/wiredlush/luna-dns/internal/config"
 )
 
 func (e *Engine) forward(message *dns.Msg) {

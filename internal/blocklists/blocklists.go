@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/r7wx/luna-dns/internal/tree"
+	"github.com/wiredlush/luna-dns/internal/tree"
 )
 
 // Blocklists - Blocklists strutct

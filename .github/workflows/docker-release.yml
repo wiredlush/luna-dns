@@ -27,5 +27,5 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Publish Docker Images
         run: |
-          docker buildx build --platform=linux/amd64,linux/arm/v7,linux/arm64/v8 -t r7wx/luna-dns:$RELEASE_VERSION --push .
-          docker buildx build --platform=linux/amd64,linux/arm/v7,linux/arm64/v8 -t r7wx/luna-dns:latest --push .
+          docker buildx build --platform=linux/amd64,linux/arm/v7,linux/arm64/v8 -t wiredlush/luna-dns:$RELEASE_VERSION --push .
+          docker buildx build --platform=linux/amd64,linux/arm/v7,linux/arm64/v8 -t wiredlush/luna-dns:latest --push .

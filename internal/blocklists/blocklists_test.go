@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/r7wx/luna-dns/internal/tree"
+	"github.com/wiredlush/luna-dns/internal/tree"
 )
 
 func TestNewBlocklists(t *testing.T) {

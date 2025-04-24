@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/r7wx/luna-dns">
+  <a href="https://github.com/wiredlush/luna-dns">
      <picture>
     <img width="150" src="assets/logo.svg"/>
     </picture>
@@ -7,10 +7,9 @@
   <br />
   <b>luna-dns</b>
   <br /> <br />
- <img src="https://img.shields.io/github/v/release/r7wx/luna-dns" alt="Release" />
-  <a href="https://github.com/r7wx/luna-dns/actions/workflows/build.yml" /><img src="https://github.com/r7wx/luna-dns/actions/workflows/build.yml/badge.svg" alt="Build"></a>
-  <a href="https://github.com/r7wx/luna-dns/actions/workflows/test.yml" /><img src="https://github.com/r7wx/luna-dns/actions/workflows/test.yml/badge.svg" alt="Test"></a>
-  <a href="https://www.codefactor.io/repository/github/r7wx/luna-dns"><img src="https://www.codefactor.io/repository/github/r7wx/luna-dns/badge?s=37c25430d7b6b31b86ad49810d6f89ef50629615" alt="CodeFactor" /></a>
+ <img src="https://img.shields.io/github/v/release/wiredlush/luna-dns" alt="Release" />
+  <a href="https://github.com/wiredlush/luna-dns/actions/workflows/build.yml" /><img src="https://github.com/wiredlush/luna-dns/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <a href="https://github.com/wiredlush/luna-dns/actions/workflows/test.yml" /><img src="https://github.com/wiredlush/luna-dns/actions/workflows/test.yml/badge.svg" alt="Test"></a>
 </p>
 <h4 align="center">Straightforward DNS forwarder with cache, custom hosts and blocklists support</h3>
 
@@ -27,7 +26,7 @@ In order to run luna-dns as a standalone executable, you can build it from sourc
 **Build from source:**
 
 ```bash
-git clone https://github.com/r7wx/luna-dns.git
+git clone https://github.com/wiredlush/luna-dns.git
 cd luna-dns
 make
 ```
@@ -49,7 +48,7 @@ docker run -d --name=luna-dns \
   -p 5355:5355/udp \
   -v /path/to/config.yml:/etc/luna-dns/config.yml \
   --restart unless-stopped \
-  r7wx/luna-dns:latest
+  wiredlush/luna-dns:latest
 ```
 
 <p align="justify">

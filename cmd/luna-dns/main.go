@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/natefinch/lumberjack"
-	"github.com/r7wx/luna-dns/internal/config"
-	"github.com/r7wx/luna-dns/internal/engine"
+	"github.com/wiredlush/luna-dns/internal/config"
+	"github.com/wiredlush/luna-dns/internal/engine"
 )
 
 func main() {
