@@ -50,7 +50,6 @@ func TestBlocklistsRoutineStop(t *testing.T) {
 		close(done)
 	}()
 
-	// Wait for initial update to complete
 	time.Sleep(100 * time.Millisecond)
 
 	ip, _ := b.Search("example.com")
@@ -99,17 +98,18 @@ func TestProcessFile(t *testing.T) {
 
 func TestProcessRemote(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/valid.txt" {
+		switch r.URL.Path {
+		case "/valid.txt":
 			fmt.Fprint(w, `
 				example.com
 				example.net
 				example.org
 			`)
-		} else if r.URL.Path == "/invalid.txt" {
+		case "/invalid.txt":
 			fmt.Fprint(w, `
 				invalid entry				
 			`)
-		} else {
+		default:
 			http.NotFound(w, r)
 		}
 	}))
@@ -138,8 +138,7 @@ func TestProcessRemote(t *testing.T) {
 	for _, domain := range expectedInvalid {
 		_, err := b.Search(domain)
 		if err == nil {
-			t.Errorf("Invalid domain %s found in hosts tree",
-				domain)
+			t.Errorf("Invalid domain %s found in hosts tree", domain)
 		}
 	}
 }
