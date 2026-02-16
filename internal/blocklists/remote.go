@@ -15,8 +15,7 @@ func (b *Blocklists) processRemote(blocklist string, hosts *tree.Tree) {
 
 	resp, err := http.Get(blocklist)
 	if err != nil {
-		log.Printf("Unable to download remote blocklist %s: %s\n",
-			blocklist, err)
+		log.Printf("Unable to download remote blocklist %s: %s\n", blocklist, err)
 		return
 	}
 	defer resp.Body.Close()
@@ -29,12 +28,12 @@ func (b *Blocklists) processRemote(blocklist string, hosts *tree.Tree) {
 		if err != nil {
 			continue
 		}
+
 		hosts.Insert(entry)
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Printf("Error processing blocklist %s: %s",
-			blocklist, err)
+		log.Printf("Error processing blocklist %s: %s", blocklist, err)
 		return
 	}
 }

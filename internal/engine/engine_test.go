@@ -11,38 +11,38 @@ import (
 	"github.com/wiredlush/luna-dns/internal/config"
 )
 
-type testResponseWrtiter struct {
+type testResponseWriter struct {
 	outMessage *dns.Msg
 }
 
-func (w *testResponseWrtiter) LocalAddr() net.Addr {
+func (w *testResponseWriter) LocalAddr() net.Addr {
 	return &net.UDPAddr{}
 }
 
-func (w *testResponseWrtiter) RemoteAddr() net.Addr {
+func (w *testResponseWriter) RemoteAddr() net.Addr {
 	return &net.UDPAddr{}
 }
 
-func (w *testResponseWrtiter) WriteMsg(m *dns.Msg) error {
+func (w *testResponseWriter) WriteMsg(m *dns.Msg) error {
 	w.outMessage = m
 	return nil
 }
 
-func (w *testResponseWrtiter) Write([]byte) (int, error) {
+func (w *testResponseWriter) Write([]byte) (int, error) {
 	return 0, nil
 }
 
-func (w *testResponseWrtiter) Close() error {
+func (w *testResponseWriter) Close() error {
 	return nil
 }
 
-func (w *testResponseWrtiter) TsigStatus() error {
+func (w *testResponseWriter) TsigStatus() error {
 	return nil
 }
 
-func (w *testResponseWrtiter) TsigTimersOnly(bool) {}
+func (w *testResponseWriter) TsigTimersOnly(bool) {}
 
-func (w *testResponseWrtiter) Hijack() {}
+func (w *testResponseWriter) Hijack() {}
 
 func TestNewEngine(t *testing.T) {
 	_, err := NewEngine(&config.Config{
@@ -109,7 +109,7 @@ func TestHandler(t *testing.T) {
 		},
 	})
 
-	testW := testResponseWrtiter{}
+	testW := testResponseWriter{}
 	engine.handler(&testW, &dns.Msg{
 		MsgHdr: dns.MsgHdr{
 			Opcode: dns.OpcodeQuery,

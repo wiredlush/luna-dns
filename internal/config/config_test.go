@@ -1,7 +1,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
@@ -9,7 +8,7 @@ import (
 
 func TestConfig(t *testing.T) {
 	writeFile := func(t *testing.T, content []byte) string {
-		tmpFile, err := ioutil.TempFile(".", "luna-dns_test")
+		tmpFile, err := os.CreateTemp(".", "luna-dns_test")
 		if err != nil {
 			t.Fatal(err)
 		}

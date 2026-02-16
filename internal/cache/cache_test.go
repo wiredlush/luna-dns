@@ -18,6 +18,7 @@ func TestCache(t *testing.T) {
 		Qtype:  1,
 		Qclass: 1,
 	}
+
 	cache.Insert([]dns.Question{question}, []dns.RR{rr})
 	found := cache.Search([]dns.Question{question})
 	if found == nil {

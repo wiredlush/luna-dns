@@ -4,7 +4,6 @@ import (
 	"github.com/wiredlush/luna-dns/internal/entry"
 )
 
-// Insert - Insert new entry in DNS tree
 func (t *Tree) Insert(entry *entry.Entry) {
 	foundTLD, _ := searchNode(&t.tlds, entry.TLD)
 	if foundTLD == nil {
@@ -19,17 +18,17 @@ func (t *Tree) Insert(entry *entry.Entry) {
 	current := foundTLD
 	for i, subdomain := range entry.Subdomains {
 		if subdomain != "*" && i != len(entry.Subdomains)-1 {
-			foundNode, _ := searchNode(&current.childrens, subdomain)
+			foundNode, _ := searchNode(&current.children, subdomain)
 			if foundNode == nil {
-				foundNode = t.insertNode(&current.childrens, subdomain, "")
+				foundNode = t.insertNode(&current.children, subdomain, "")
 			}
 			current = foundNode
 			continue
 		}
 
-		foundNode, _ := searchNode(&current.childrens, subdomain)
+		foundNode, _ := searchNode(&current.children, subdomain)
 		if foundNode == nil {
-			foundNode = t.insertNode(&current.childrens, subdomain, entry.IP)
+			foundNode = t.insertNode(&current.children, subdomain, entry.IP)
 		}
 		current = foundNode
 
@@ -41,8 +40,8 @@ func (t *Tree) Insert(entry *entry.Entry) {
 
 func (t *Tree) insertNode(nodes *map[string]*node, host string, ip string) *node {
 	(*nodes)[host] = &node{
-		ip:        ip,
-		childrens: map[string]*node{},
+		ip:       ip,
+		children: map[string]*node{},
 	}
 
 	insertedNode, _ := searchNode(nodes, host)

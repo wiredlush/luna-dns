@@ -12,7 +12,6 @@ import (
 	"github.com/wiredlush/luna-dns/internal/tree"
 )
 
-// Engine - DNS Engine
 type Engine struct {
 	Hosts        *tree.Tree
 	Blocklists   *blocklists.Blocklists
@@ -23,7 +22,6 @@ type Engine struct {
 	forwardIndex int
 }
 
-// NewEngine - Create a new engine
 func NewEngine(config *config.Config) (*Engine, error) {
 	Hosts := tree.NewTree()
 	for _, host := range config.Hosts {
@@ -31,15 +29,14 @@ func NewEngine(config *config.Config) (*Engine, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		Hosts.Insert(entry)
 	}
 
 	return &Engine{
-		Hosts: Hosts,
-		Blocklists: blocklists.NewBlocklists(config.Blocklists,
-			config.BlocklistUpdate),
-		cache: cache.NewCache(time.Duration(config.CacheTTL) *
-			time.Second),
+		Hosts:        Hosts,
+		Blocklists:   blocklists.NewBlocklists(config.Blocklists, config.BlocklistUpdate),
+		cache:        cache.NewCache(time.Duration(config.CacheTTL) * time.Second),
 		addr:         config.Addr,
 		network:      config.Network,
 		dns:          config.DNS,
@@ -47,7 +44,6 @@ func NewEngine(config *config.Config) (*Engine, error) {
 	}, nil
 }
 
-// Start - Start Engine DNS server
 func (e *Engine) Start() error {
 	go e.Blocklists.Routine()
 	go e.cache.Routine()

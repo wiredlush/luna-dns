@@ -29,12 +29,12 @@ func (b *Blocklists) processFile(blocklist string, hosts *tree.Tree) {
 		if err != nil {
 			continue
 		}
+
 		hosts.Insert(entry)
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Printf("Error processing blocklist %s: %s",
-			filepath, err)
+		log.Printf("Error processing blocklist %s: %s", filepath, err)
 		return
 	}
 }

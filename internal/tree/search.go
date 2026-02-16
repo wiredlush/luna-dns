@@ -4,7 +4,6 @@ import (
 	"github.com/wiredlush/luna-dns/internal/entry"
 )
 
-// Search - Search for a domain in DNS tree
 func (t *Tree) Search(domain string) (string, error) {
 	entry, err := entry.NewEntry(domain, "")
 	if err != nil {
@@ -23,7 +22,7 @@ func (t *Tree) searchEntry(entry *entry.Entry) string {
 	if foundTLD != nil {
 		current := foundTLD
 		for index, subdomain := range entry.Subdomains {
-			foundNode, wildcard := searchNode(&current.childrens, subdomain)
+			foundNode, wildcard := searchNode(&current.children, subdomain)
 			switch {
 			case wildcard:
 				return foundNode.ip
