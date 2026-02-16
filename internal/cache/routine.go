@@ -6,13 +6,20 @@ import (
 )
 
 func (c *Cache) Routine() {
-	for {
-		time.Sleep(c.ttl + (1 * time.Second))
-		log.Println("Cleaning old cache entries...")
+	ticker := time.NewTicker(c.ttl + (1 * time.Second))
+	defer ticker.Stop()
 
-		deletedEntries := c.deleteOldEntries()
-		if deletedEntries > 0 {
-			log.Printf("Deleted %d entries from cache\n", deletedEntries)
+	for {
+		select {
+		case <-c.stopCh:
+			return
+		case <-ticker.C:
+			log.Println("Cleaning old cache entries...")
+
+			deletedEntries := c.deleteOldEntries()
+			if deletedEntries > 0 {
+				log.Printf("Deleted %d entries from cache\n", deletedEntries)
+			}
 		}
 	}
 }

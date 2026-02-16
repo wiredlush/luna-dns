@@ -12,6 +12,7 @@ type Blocklists struct {
 	hosts      *tree.Tree
 	blocklists []string
 	updateTime int64
+	stopCh     chan struct{}
 }
 
 func NewBlocklists(blocklists []string, updateTime int64) *Blocklists {
@@ -23,7 +24,12 @@ func NewBlocklists(blocklists []string, updateTime int64) *Blocklists {
 		hosts:      tree.NewTree(),
 		blocklists: blocklists,
 		updateTime: updateTime,
+		stopCh:     make(chan struct{}),
 	}
+}
+
+func (b *Blocklists) Stop() {
+	close(b.stopCh)
 }
 
 func (b *Blocklists) Routine() {
@@ -31,22 +37,35 @@ func (b *Blocklists) Routine() {
 		return
 	}
 
+	b.update()
+
+	timer := time.NewTimer(time.Duration(b.updateTime) * time.Minute)
+	defer timer.Stop()
+
 	for {
-		log.Println("Updating blocklists...")
+		select {
+		case <-b.stopCh:
+			return
+		case <-timer.C:
+			b.update()
+			timer.Reset(time.Duration(b.updateTime) * time.Minute)
+		}
+	}
+}
 
-		newHosts := tree.NewTree()
-		for _, blocklist := range b.blocklists {
-			if strings.HasPrefix(blocklist, "file://") {
-				b.processFile(blocklist, newHosts)
-				continue
-			}
+func (b *Blocklists) update() {
+	log.Println("Updating blocklists...")
 
-			b.processRemote(blocklist, newHosts)
+	newHosts := tree.NewTree()
+	for _, blocklist := range b.blocklists {
+		if strings.HasPrefix(blocklist, "file://") {
+			b.processFile(blocklist, newHosts)
+			continue
 		}
 
-		b.hosts = newHosts
-		log.Printf("Blocklists updated, next update in %d minutes\n", b.updateTime)
-
-		time.Sleep(time.Duration(b.updateTime * int64(time.Minute)))
+		b.processRemote(blocklist, newHosts)
 	}
+
+	b.hosts = newHosts
+	log.Printf("Blocklists updated, next update in %d minutes\n", b.updateTime)
 }

@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -20,11 +21,13 @@ type Engine struct {
 	network      string
 	dns          []config.DNS
 	forwardIndex int
+	server       *dns.Server
+	cfg          *config.Config
 }
 
-func NewEngine(config *config.Config) (*Engine, error) {
+func NewEngine(cfg *config.Config) (*Engine, error) {
 	Hosts := tree.NewTree()
-	for _, host := range config.Hosts {
+	for _, host := range cfg.Hosts {
 		entry, err := entry.NewEntry(host.Host, host.IP)
 		if err != nil {
 			return nil, err
@@ -35,28 +38,47 @@ func NewEngine(config *config.Config) (*Engine, error) {
 
 	return &Engine{
 		Hosts:        Hosts,
-		Blocklists:   blocklists.NewBlocklists(config.Blocklists, config.BlocklistUpdate),
-		cache:        cache.NewCache(time.Duration(config.CacheTTL) * time.Second),
-		addr:         config.Addr,
-		network:      config.Network,
-		dns:          config.DNS,
+		Blocklists:   blocklists.NewBlocklists(cfg.Blocklists, cfg.BlocklistUpdate),
+		cache:        cache.NewCache(time.Duration(cfg.CacheTTL) * time.Second),
+		addr:         cfg.Addr,
+		network:      cfg.Network,
+		dns:          cfg.DNS,
 		forwardIndex: 0,
+		cfg:          cfg,
 	}, nil
 }
 
 func (e *Engine) Start() error {
+	if e.server != nil {
+		return fmt.Errorf("engine already running")
+	}
+
+	e.Blocklists = blocklists.NewBlocklists(e.cfg.Blocklists, e.cfg.BlocklistUpdate)
+	e.cache = cache.NewCache(time.Duration(e.cfg.CacheTTL) * time.Second)
+
 	go e.Blocklists.Routine()
 	go e.cache.Routine()
 
 	log.Printf("Listening on %s (%s)\n", e.addr, e.network)
 
 	dns.HandleFunc(".", e.handler)
-	server := &dns.Server{Addr: e.addr, Net: e.network}
-	err := server.ListenAndServe()
-	if err != nil {
-		return err
-	}
-	defer server.Shutdown()
+	e.server = &dns.Server{Addr: e.addr, Net: e.network}
+	return e.server.ListenAndServe()
+}
 
-	return nil
+func (e *Engine) Stop() error {
+	if e.server == nil {
+		return fmt.Errorf("engine not running")
+	}
+
+	log.Println("Stopping engine...")
+
+	e.Blocklists.Stop()
+	e.cache.Stop()
+
+	err := e.server.Shutdown()
+	e.server = nil
+
+	log.Println("Engine stopped")
+	return err
 }

@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/wiredlush/luna-dns/internal/tree"
 )
@@ -19,6 +20,50 @@ func TestNewBlocklists(t *testing.T) {
 	if len(b.blocklists) != len(blocklists) {
 		t.Errorf("Expected %d blocklists, got %d",
 			len(blocklists), len(b.blocklists))
+	}
+	if b.stopCh == nil {
+		t.Errorf("Expected stopCh to be initialized")
+	}
+}
+
+func TestBlocklistsDefaultUpdateTime(t *testing.T) {
+	b := NewBlocklists(nil, 0)
+	if b.updateTime != 720 {
+		t.Errorf("Expected default updateTime 720, got %d", b.updateTime)
+	}
+}
+
+func TestBlocklistsRoutineStop(t *testing.T) {
+	tmpfile, err := os.CreateTemp("", "blocklist-stop-*.txt")
+	if err != nil {
+		t.Fatalf("Error creating temporary file: %s", err)
+	}
+	defer os.Remove(tmpfile.Name())
+	tmpfile.Write([]byte("example.com\n"))
+	tmpfile.Close()
+
+	b := NewBlocklists([]string{"file://" + tmpfile.Name()}, 60)
+
+	done := make(chan struct{})
+	go func() {
+		b.Routine()
+		close(done)
+	}()
+
+	// Wait for initial update to complete
+	time.Sleep(100 * time.Millisecond)
+
+	ip, _ := b.Search("example.com")
+	if ip == "" {
+		t.Fatal("Expected example.com to be blocked after routine start")
+	}
+
+	b.Stop()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Routine did not exit after Stop")
 	}
 }
 
