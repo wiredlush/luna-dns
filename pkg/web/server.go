@@ -9,36 +9,39 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
+	"github.com/wiredlush/luna-dns/pkg/database"
 )
 
 var StartFunc func([]string) error
 
-type WebConfig struct {
+type API struct {
 	Addr string
 	Cert string
 	Key  string
 	DB   string
+	db   *database.Database
+	app  *fiber.App
 }
 
 func startFromFlags(args []string) error {
 	fs := flag.NewFlagSet("luna-dns-web", flag.ExitOnError)
 
-	cfg := &WebConfig{}
-	fs.StringVar(&cfg.Addr, "web-addr", ":8080", "Web server listen address")
-	fs.StringVar(&cfg.Cert, "web-cert", "", "TLS certificate path")
-	fs.StringVar(&cfg.Key, "web-key", "", "TLS key path")
-	fs.StringVar(&cfg.DB, "db", "luna-dns.db", "SQLite database path")
+	api := &API{}
+	fs.StringVar(&api.Addr, "web-addr", ":8080", "Web server listen address")
+	fs.StringVar(&api.Cert, "web-cert", "", "TLS certificate path")
+	fs.StringVar(&api.Key, "web-key", "", "TLS key path")
+	fs.StringVar(&api.DB, "db", "luna-dns.db", "SQLite database path")
 
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 
-	return Start(cfg)
+	return api.Start()
 }
 
-func Start(cfg *WebConfig) error {
-	certFile := cfg.Cert
-	keyFile := cfg.Key
+func (a *API) Start() error {
+	certFile := a.Cert
+	keyFile := a.Key
 
 	if certFile == "" || keyFile == "" {
 		var err error
@@ -49,26 +52,29 @@ func Start(cfg *WebConfig) error {
 		log.Println("Generated self-signed certificate for HTTPS")
 	}
 
-	db, err := OpenDB(cfg.DB)
+	var err error
+	a.db, err = database.Open(a.DB)
 	if err != nil {
 		return err
 	}
 
-	app := fiber.New(fiber.Config{
+	a.app = fiber.New(fiber.Config{
 		DisableStartupMessage: true,
 	})
 
-	registerAPI(app, db)
+	a.app.Get("/api/health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"status": "ok"})
+	})
 
-	app.Use("/", filesystem.New(filesystem.Config{
+	a.app.Use("/", filesystem.New(filesystem.Config{
 		Root:       http.FS(staticFS),
 		PathPrefix: "static",
 		Browse:     false,
 	}))
 
 	go func() {
-		log.Printf("Web server starting on https://%s", cfg.Addr)
-		if err := app.ListenTLS(cfg.Addr, certFile, keyFile); err != nil {
+		log.Printf("Web server starting on https://%s", a.Addr)
+		if err := a.app.ListenTLS(a.Addr, certFile, keyFile); err != nil {
 			log.Printf("Web server error: %v", err)
 		}
 	}()
