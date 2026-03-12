@@ -5,8 +5,8 @@ type Tree struct {
 }
 
 type node struct {
-	childrens map[string]*node
-	ip        string
+	children map[string]*node
+	ip       string
 }
 
 func NewTree() *Tree {

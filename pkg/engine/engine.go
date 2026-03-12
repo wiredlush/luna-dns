@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -21,6 +22,7 @@ type Engine struct {
 	network         string
 	dns             []config.DNS
 	forwardIndex    int
+	server          *dns.Server
 }
 
 func NewEngine(config *config.Config) (*Engine, error) {
@@ -52,18 +54,27 @@ func NewEngine(config *config.Config) (*Engine, error) {
 }
 
 func (e *Engine) Start() error {
+	if e.server != nil {
+		return fmt.Errorf("engine is already running")
+	}
+
+	e.cache.Reset()
 	go e.BlocklistsRoutine()
 	go e.cache.CacheRoutine()
 
 	log.Printf("Listening on %s (%s)\n", e.addr, e.network)
 
 	dns.HandleFunc(".", e.handler)
-	server := &dns.Server{Addr: e.addr, Net: e.network}
-	err := server.ListenAndServe()
-	if err != nil {
-		return err
-	}
-	defer server.Shutdown()
+	e.server = &dns.Server{Addr: e.addr, Net: e.network}
+	return e.server.ListenAndServe()
+}
 
-	return nil
+func (e *Engine) Stop() error {
+	if e.server == nil {
+		return fmt.Errorf("engine is not running")
+	}
+	e.cache.Stop()
+	err := e.server.Shutdown()
+	e.server = nil
+	return err
 }

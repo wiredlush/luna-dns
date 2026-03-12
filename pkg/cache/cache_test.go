@@ -18,6 +18,7 @@ func TestCache(t *testing.T) {
 		Qtype:  1,
 		Qclass: 1,
 	}
+
 	cache.Insert([]dns.Question{question}, []dns.RR{rr})
 	found := cache.Search([]dns.Question{question})
 	if found == nil {
@@ -44,7 +45,25 @@ func TestCacheRoutine(t *testing.T) {
 
 	cache.Lock()
 	if len(cache.entries) > 0 {
+		cache.Unlock()
 		t.Fatal()
+	}
+	cache.Unlock()
+
+	cache.Stop()
+}
+
+func TestCacheRoutineStop(t *testing.T) {
+	cache := NewCache(10 * time.Minute)
+	go cache.CacheRoutine()
+
+	cache.Insert([]dns.Question{}, []dns.RR{})
+	cache.Stop()
+
+	cache.Lock()
+	if len(cache.entries) != 1 {
+		cache.Unlock()
+		t.Fatal("Expected entry to still exist after stop")
 	}
 	cache.Unlock()
 }

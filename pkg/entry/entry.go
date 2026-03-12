@@ -16,8 +16,7 @@ type Entry struct {
 func NewEntry(host, ip string) (*Entry, error) {
 	domainRegex := regexp.MustCompile(`^(?:(?:(?:[\w_-]+|\*)\.)+[\w_-]+)|\*$`)
 	if !domainRegex.MatchString(host) {
-		return nil, fmt.Errorf("invalid host format: %s",
-			host)
+		return nil, fmt.Errorf("invalid host format: %s", host)
 	}
 
 	elements := strings.Split(host, ".")

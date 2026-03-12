@@ -15,38 +15,38 @@ import (
 	"github.com/wiredlush/luna-dns/pkg/tree"
 )
 
-type testResponseWrtiter struct {
+type testResponseWriter struct {
 	outMessage *dns.Msg
 }
 
-func (w *testResponseWrtiter) LocalAddr() net.Addr {
+func (w *testResponseWriter) LocalAddr() net.Addr {
 	return &net.UDPAddr{}
 }
 
-func (w *testResponseWrtiter) RemoteAddr() net.Addr {
+func (w *testResponseWriter) RemoteAddr() net.Addr {
 	return &net.UDPAddr{}
 }
 
-func (w *testResponseWrtiter) WriteMsg(m *dns.Msg) error {
+func (w *testResponseWriter) WriteMsg(m *dns.Msg) error {
 	w.outMessage = m
 	return nil
 }
 
-func (w *testResponseWrtiter) Write([]byte) (int, error) {
+func (w *testResponseWriter) Write([]byte) (int, error) {
 	return 0, nil
 }
 
-func (w *testResponseWrtiter) Close() error {
+func (w *testResponseWriter) Close() error {
 	return nil
 }
 
-func (w *testResponseWrtiter) TsigStatus() error {
+func (w *testResponseWriter) TsigStatus() error {
 	return nil
 }
 
-func (w *testResponseWrtiter) TsigTimersOnly(bool) {}
+func (w *testResponseWriter) TsigTimersOnly(bool) {}
 
-func (w *testResponseWrtiter) Hijack() {}
+func (w *testResponseWriter) Hijack() {}
 
 func TestNewEngine(t *testing.T) {
 	_, err := NewEngine(&config.Config{
@@ -98,7 +98,81 @@ func TestEngineStart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to dial DNS server: %v", err)
 	}
-	defer conn.Close()
+	conn.Close()
+
+	if err := e.Stop(); err != nil {
+		t.Fatalf("Stop returned an error: %v", err)
+	}
+}
+
+func TestEngineStopNotRunning(t *testing.T) {
+	e, _ := NewEngine(&config.Config{
+		Addr:    "127.0.0.1:53556",
+		Network: "udp",
+	})
+
+	err := e.Stop()
+	if err == nil {
+		t.Fatal("Expected error when stopping a non-running engine")
+	}
+}
+
+func TestEngineStartAlreadyRunning(t *testing.T) {
+	e, _ := NewEngine(&config.Config{
+		Addr:    "127.0.0.1:53557",
+		Network: "tcp",
+	})
+
+	go e.Start()
+	time.Sleep(100 * time.Millisecond)
+	defer e.Stop()
+
+	err := e.Start()
+	if err == nil {
+		t.Fatal("Expected error when starting an already running engine")
+	}
+}
+
+func TestEngineRestart(t *testing.T) {
+	e, _ := NewEngine(&config.Config{
+		Addr:    "127.0.0.1:53558",
+		Network: "tcp",
+		Hosts: []config.Host{
+			{
+				Host: "google.com",
+				IP:   "127.0.0.1",
+			},
+		},
+	})
+
+	go e.Start()
+	time.Sleep(100 * time.Millisecond)
+
+	conn, err := net.Dial(e.network, e.addr)
+	if err != nil {
+		t.Fatalf("Failed to dial DNS server on first start: %v", err)
+	}
+	conn.Close()
+
+	if err := e.Stop(); err != nil {
+		t.Fatalf("Stop returned an error: %v", err)
+	}
+
+	_, err = net.Dial(e.network, e.addr)
+	if err == nil {
+		t.Fatal("Expected connection to fail after stop")
+	}
+
+	go e.Start()
+	time.Sleep(100 * time.Millisecond)
+
+	conn, err = net.Dial(e.network, e.addr)
+	if err != nil {
+		t.Fatalf("Failed to dial DNS server after restart: %v", err)
+	}
+	conn.Close()
+
+	e.Stop()
 }
 
 func TestHandler(t *testing.T) {
@@ -113,7 +187,7 @@ func TestHandler(t *testing.T) {
 		},
 	})
 
-	testW := testResponseWrtiter{}
+	testW := testResponseWriter{}
 	engine.handler(&testW, &dns.Msg{
 		MsgHdr: dns.MsgHdr{
 			Opcode: dns.OpcodeQuery,

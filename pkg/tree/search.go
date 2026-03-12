@@ -22,7 +22,7 @@ func (t *Tree) searchEntry(entry *entry.Entry) string {
 	if foundTLD != nil {
 		current := foundTLD
 		for index, subdomain := range entry.Subdomains {
-			foundNode, wildcard := searchNode(&current.childrens, subdomain)
+			foundNode, wildcard := searchNode(&current.children, subdomain)
 			switch {
 			case wildcard:
 				return foundNode.ip

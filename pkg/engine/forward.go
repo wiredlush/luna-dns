@@ -39,8 +39,7 @@ func (e *Engine) forward(message *dns.Msg) {
 			break
 		}
 
-		log.Printf("%s (%s): %s\n", server.Addr,
-			server.Network, err)
+		log.Printf("%s (%s): %s\n", server.Addr, server.Network, err)
 	}
 
 	e.forwardIndex = (e.forwardIndex + 1) % len(e.dns)
@@ -52,8 +51,7 @@ func (e *Engine) buildForwardChain() []config.DNS {
 		return e.dns
 	}
 
-	return append(e.dns[e.forwardIndex:],
-		e.dns[:e.forwardIndex]...)
+	return append(e.dns[e.forwardIndex:], e.dns[:e.forwardIndex]...)
 }
 
 func (e *Engine) forwardRequest(server config.DNS, message *dns.Msg) error {
@@ -64,14 +62,14 @@ func (e *Engine) forwardRequest(server config.DNS, message *dns.Msg) error {
 	if err != nil {
 		return err
 	}
+
 	if response == nil || response.Rcode != dns.RcodeSuccess {
 		return fmt.Errorf("failed to get a valid response")
 	}
 
 	if len(response.Answer) > 0 {
 		message.Answer = response.Answer
-		log.Printf("%s (%s) -> %s\n", server.Addr, server.Network,
-			response.Answer)
+		log.Printf("%s (%s) -> %s\n", server.Addr, server.Network, response.Answer)
 		go e.cache.Insert(message.Question, response.Answer)
 	}
 

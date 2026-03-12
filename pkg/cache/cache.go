@@ -12,6 +12,7 @@ type Cache struct {
 	sync.Mutex
 	entries map[string]entry
 	ttl     time.Duration
+	stopCh  chan struct{}
 }
 
 type entry struct {
@@ -23,7 +24,20 @@ func NewCache(ttl time.Duration) *Cache {
 	return &Cache{
 		ttl:     ttl,
 		entries: map[string]entry{},
+		stopCh:  make(chan struct{}),
 	}
+}
+
+func (c *Cache) Stop() {
+	select {
+	case <-c.stopCh:
+	default:
+		close(c.stopCh)
+	}
+}
+
+func (c *Cache) Reset() {
+	c.stopCh = make(chan struct{})
 }
 
 func (c *Cache) Search(question []dns.Question) []dns.RR {
@@ -41,5 +55,6 @@ func (c *Cache) Insert(question []dns.Question, answer []dns.RR) {
 		createdAt: time.Now(),
 		answer:    answer,
 	}
+
 	log.Println("New entry in cache: " + hash)
 }
