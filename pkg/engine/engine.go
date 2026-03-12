@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"github.com/wiredlush/luna-dns/internal/cache"
+	"github.com/wiredlush/luna-dns/pkg/cache"
 	"github.com/wiredlush/luna-dns/pkg/config"
 	"github.com/wiredlush/luna-dns/pkg/entry"
 	"github.com/wiredlush/luna-dns/pkg/tree"

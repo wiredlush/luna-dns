@@ -3,3 +3,8 @@ dist/
 build/
 coverage.out
 .DS_Store
+web/node_modules/
+web/dist/
+pkg/web/static/
+*.db
+*.txt
