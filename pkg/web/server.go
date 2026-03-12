@@ -8,6 +8,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
@@ -27,6 +29,14 @@ type Server struct {
 	sessions *sessionStore
 }
 
+func defaultDBPath() string {
+	exe, err := os.Executable()
+	if err != nil {
+		return "luna-dns.db"
+	}
+	return filepath.Join(filepath.Dir(exe), "luna-dns.db")
+}
+
 func startFromFlags(args []string) error {
 	fs := flag.NewFlagSet("luna-dns-web", flag.ExitOnError)
 
@@ -34,7 +44,7 @@ func startFromFlags(args []string) error {
 	fs.StringVar(&server.Addr, "web-addr", ":8080", "Web server listen address")
 	fs.StringVar(&server.Cert, "web-cert", "", "TLS certificate path")
 	fs.StringVar(&server.Key, "web-key", "", "TLS key path")
-	fs.StringVar(&server.DB, "db", "luna-dns.db", "SQLite database path")
+	fs.StringVar(&server.DB, "db", defaultDBPath(), "SQLite database path")
 
 	if err := fs.Parse(args); err != nil {
 		return err
