@@ -3,8 +3,10 @@
 package web
 
 import (
+	"crypto/tls"
 	"flag"
 	"log"
+	"net"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -41,20 +43,24 @@ func startFromFlags(args []string) error {
 	return server.Start()
 }
 
-func (s *Server) Start() error {
-	certFile := s.Cert
-	keyFile := s.Key
+func (s *Server) loadTLSCert() (tls.Certificate, error) {
+	if s.Cert != "" && s.Key != "" {
+		return tls.LoadX509KeyPair(s.Cert, s.Key)
+	}
+	cert, err := generateSelfSignedCert()
+	if err != nil {
+		return cert, err
+	}
+	log.Println("Generated self-signed certificate for HTTPS")
+	return cert, nil
+}
 
-	if certFile == "" || keyFile == "" {
-		var err error
-		certFile, keyFile, err = generateSelfSignedCert()
-		if err != nil {
-			return err
-		}
-		log.Println("Generated self-signed certificate for HTTPS")
+func (s *Server) Start() error {
+	tlsCert, err := s.loadTLSCert()
+	if err != nil {
+		return err
 	}
 
-	var err error
 	s.db, err = database.Open(s.DB)
 	if err != nil {
 		return err
@@ -82,9 +88,18 @@ func (s *Server) Start() error {
 		Browse:     false,
 	}))
 
+	ln, err := net.Listen("tcp", s.Addr)
+	if err != nil {
+		return err
+	}
+
+	tlsLn := tls.NewListener(ln, &tls.Config{
+		Certificates: []tls.Certificate{tlsCert},
+	})
+
 	go func() {
 		log.Printf("Web server starting on https://%s", s.Addr)
-		if err := s.app.ListenTLS(s.Addr, certFile, keyFile); err != nil {
+		if err := s.app.Listener(tlsLn); err != nil {
 			log.Printf("Web server error: %v", err)
 		}
 	}()

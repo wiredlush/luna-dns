@@ -6,25 +6,23 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
 	"math/big"
 	"net"
-	"os"
-	"path/filepath"
 	"time"
 )
 
-func generateSelfSignedCert() (certPath, keyPath string, err error) {
+func generateSelfSignedCert() (tls.Certificate, error) {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		return "", "", err
+		return tls.Certificate{}, err
 	}
 
 	serialNumber, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 	if err != nil {
-		return "", "", err
+		return tls.Certificate{}, err
 	}
 
 	template := x509.Certificate{
@@ -40,38 +38,11 @@ func generateSelfSignedCert() (certPath, keyPath string, err error) {
 
 	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
 	if err != nil {
-		return "", "", err
+		return tls.Certificate{}, err
 	}
 
-	dir, err := os.MkdirTemp("", "luna-dns-cert-*")
-	if err != nil {
-		return "", "", err
-	}
-
-	certPath = filepath.Join(dir, "cert.pem")
-	keyPath = filepath.Join(dir, "key.pem")
-
-	certFile, err := os.Create(certPath)
-	if err != nil {
-		return "", "", err
-	}
-	defer certFile.Close()
-	if err := pem.Encode(certFile, &pem.Block{Type: "CERTIFICATE", Bytes: certDER}); err != nil {
-		return "", "", err
-	}
-
-	keyBytes, err := x509.MarshalECPrivateKey(priv)
-	if err != nil {
-		return "", "", err
-	}
-	keyFile, err := os.Create(keyPath)
-	if err != nil {
-		return "", "", err
-	}
-	defer keyFile.Close()
-	if err := pem.Encode(keyFile, &pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes}); err != nil {
-		return "", "", err
-	}
-
-	return certPath, keyPath, nil
+	return tls.Certificate{
+		Certificate: [][]byte{certDER},
+		PrivateKey:  priv,
+	}, nil
 }
