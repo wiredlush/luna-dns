@@ -9,39 +9,41 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/wiredlush/luna-dns/pkg/database"
 )
 
 var StartFunc func([]string) error
 
-type API struct {
-	Addr string
-	Cert string
-	Key  string
-	DB   string
-	db   *database.Database
-	app  *fiber.App
+type Server struct {
+	Addr     string
+	Cert     string
+	Key      string
+	DB       string
+	db       *database.Database
+	app      *fiber.App
+	sessions *sessionStore
 }
 
 func startFromFlags(args []string) error {
 	fs := flag.NewFlagSet("luna-dns-web", flag.ExitOnError)
 
-	api := &API{}
-	fs.StringVar(&api.Addr, "web-addr", ":8080", "Web server listen address")
-	fs.StringVar(&api.Cert, "web-cert", "", "TLS certificate path")
-	fs.StringVar(&api.Key, "web-key", "", "TLS key path")
-	fs.StringVar(&api.DB, "db", "luna-dns.db", "SQLite database path")
+	server := &Server{}
+	fs.StringVar(&server.Addr, "web-addr", ":8080", "Web server listen address")
+	fs.StringVar(&server.Cert, "web-cert", "", "TLS certificate path")
+	fs.StringVar(&server.Key, "web-key", "", "TLS key path")
+	fs.StringVar(&server.DB, "db", "luna-dns.db", "SQLite database path")
 
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 
-	return api.Start()
+	return server.Start()
 }
 
-func (a *API) Start() error {
-	certFile := a.Cert
-	keyFile := a.Key
+func (s *Server) Start() error {
+	certFile := s.Cert
+	keyFile := s.Key
 
 	if certFile == "" || keyFile == "" {
 		var err error
@@ -53,28 +55,36 @@ func (a *API) Start() error {
 	}
 
 	var err error
-	a.db, err = database.Open(a.DB)
+	s.db, err = database.Open(s.DB)
 	if err != nil {
 		return err
 	}
 
-	a.app = fiber.New(fiber.Config{
+	s.sessions = newSessionStore()
+
+	s.app = fiber.New(fiber.Config{
 		DisableStartupMessage: true,
 	})
 
-	a.app.Get("/api/health", func(c *fiber.Ctx) error {
+	s.app.Use(logger.New())
+
+	s.app.Post("/api/login", s.handleLogin)
+	s.app.Post("/api/logout", s.handleLogout)
+
+	s.app.Use("/api", s.authMiddleware)
+	s.app.Get("/api/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
 
-	a.app.Use("/", filesystem.New(filesystem.Config{
+	s.app.Use("/", filesystem.New(filesystem.Config{
 		Root:       http.FS(staticFS),
 		PathPrefix: "static",
 		Browse:     false,
 	}))
 
 	go func() {
-		log.Printf("Web server starting on https://%s", a.Addr)
-		if err := a.app.ListenTLS(a.Addr, certFile, keyFile); err != nil {
+		log.Printf("Web server starting on https://%s", s.Addr)
+		if err := s.app.ListenTLS(s.Addr, certFile, keyFile); err != nil {
 			log.Printf("Web server error: %v", err)
 		}
 	}()

@@ -9,6 +9,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type User struct {
@@ -28,6 +29,14 @@ func (u *User) SetPassword(plain string) error {
 
 func (u *User) CheckPassword(plain string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(plain)) == nil
+}
+
+func (d *Database) FindByUsername(username string) (*User, error) {
+	var user User
+	if err := d.db.Session(&gorm.Session{Logger: logger.Discard}).Where("username = ?", username).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (d *Database) seedDefaultAdmin() error {
