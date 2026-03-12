@@ -1,30 +1,39 @@
-import { useEffect, useState } from 'react'
-import Login from './Login'
+import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Login from "./Login";
+import Layout from "./Layout";
+import Dashboard from "./Dashboard";
+import DnsServer from "./DnsServer";
+import Blocklist from "./Blocklist";
+import Security from "./Security";
+import Users from "./Users";
 
 export default function App() {
-  const [authed, setAuthed] = useState<boolean | null>(null)
+  const [authed, setAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
-    checkAuth()
-  }, [])
+    fetch("/api/health", { credentials: "same-origin" })
+      .then((res) => setAuthed(res.ok))
+      .catch(() => setAuthed(false));
+  }, []);
 
-  function checkAuth() {
-    fetch('/api/health', { credentials: 'same-origin' })
-      .then(res => {
-        setAuthed(res.ok)
-      })
-      .catch(() => setAuthed(false))
-  }
-
-  if (authed === null) return null
+  if (authed === null) return null;
 
   if (!authed) {
-    return <Login onLogin={() => setAuthed(true)} />
+    return <Login onLogin={() => setAuthed(true)} />;
   }
 
   return (
-    <div>
-      <h1>Luna DNS</h1>
-    </div>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route element={<Layout onLogout={() => setAuthed(false)} />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/dns" element={<DnsServer />} />
+          <Route path="/blocklist" element={<Blocklist />} />
+          <Route path="/security" element={<Security />} />
+          <Route path="/users" element={<Users />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
 }

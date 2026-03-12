@@ -1,7 +1,7 @@
 <p align="center">
   <a href="https://github.com/wiredlush/luna-dns">
      <picture>
-    <img width="150" src="assets/logo.svg"/>
+    <img width="150" src="web/public/logo.svg"/>
     </picture>
   </a>
   <br />

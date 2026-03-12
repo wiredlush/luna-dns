@@ -92,6 +92,10 @@ func (s *Server) Start() error {
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
 
+	s.app.Get("/api/users", s.listUsers)
+	s.app.Post("/api/users", s.createUser)
+	s.app.Delete("/api/users/:id", s.deleteUser)
+
 	s.app.Use("/", filesystem.New(filesystem.Config{
 		Root:       http.FS(staticFS),
 		PathPrefix: "static",
