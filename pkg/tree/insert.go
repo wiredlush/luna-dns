@@ -1,10 +1,9 @@
 package tree
 
 import (
-	"github.com/wiredlush/luna-dns/internal/entry"
+	"github.com/wiredlush/luna-dns/pkg/entry"
 )
 
-// Insert - Insert new entry in DNS tree
 func (t *Tree) Insert(entry *entry.Entry) {
 	foundTLD, _ := searchNode(&t.tlds, entry.TLD)
 	if foundTLD == nil {

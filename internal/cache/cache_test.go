@@ -36,7 +36,7 @@ func TestCache(t *testing.T) {
 
 func TestCacheRoutine(t *testing.T) {
 	cache := NewCache(1 * time.Second)
-	go cache.Routine()
+	go cache.CacheRoutine()
 
 	cache.Insert([]dns.Question{}, []dns.RR{})
 

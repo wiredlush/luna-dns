@@ -7,12 +7,12 @@ import (
 	"log"
 
 	"github.com/miekg/dns"
-	"github.com/wiredlush/luna-dns/internal/config"
+	"github.com/wiredlush/luna-dns/pkg/config"
 )
 
 func (e *Engine) forward(message *dns.Msg) {
 	for _, q := range message.Question {
-		ip, err := e.Blocklists.Search(q.Name[:len(q.Name)-1])
+		ip, err := e.blocklistTree.Search(q.Name[:len(q.Name)-1])
 		if ip == "" || err != nil {
 			continue
 		}

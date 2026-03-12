@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-// Entry - Entry struct
 type Entry struct {
 	Host       string
 	IP         string
@@ -14,7 +13,6 @@ type Entry struct {
 	Subdomains []string
 }
 
-// NewEntry - Create a new entry
 func NewEntry(host, ip string) (*Entry, error) {
 	domainRegex := regexp.MustCompile(`^(?:(?:(?:[\w_-]+|\*)\.)+[\w_-]+)|\*$`)
 	if !domainRegex.MatchString(host) {

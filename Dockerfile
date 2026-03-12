@@ -1,4 +1,4 @@
-FROM golang:1.23 AS go-builder
+FROM golang:1.24 AS go-builder
 WORKDIR /luna-dns
 COPY . .
 RUN make

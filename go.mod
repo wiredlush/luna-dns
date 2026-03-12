@@ -1,6 +1,6 @@
 module github.com/wiredlush/luna-dns
 
-go 1.23.0
+go 1.24.0
 
 require (
 	github.com/miekg/dns v1.1.65

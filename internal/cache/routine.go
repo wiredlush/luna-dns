@@ -5,8 +5,7 @@ import (
 	"time"
 )
 
-// Routine - Starts the cache cleaning routine
-func (c *Cache) Routine() {
+func (c *Cache) CacheRoutine() {
 	for {
 		time.Sleep(c.ttl + (1 * time.Second))
 		log.Println("Cleaning old cache entries...")
@@ -25,7 +24,7 @@ func (c *Cache) deleteOldEntries() int {
 
 	deletedEntries := 0
 	for hash, entry := range c.entries {
-		delta := time.Now().Sub(entry.createdAt)
+		delta := time.Since(entry.createdAt)
 		if delta > c.ttl {
 			delete(c.entries, hash)
 			deletedEntries++

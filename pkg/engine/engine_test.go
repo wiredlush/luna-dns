@@ -3,12 +3,16 @@ package engine
 import (
 	"fmt"
 	"net"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/miekg/dns"
-	"github.com/wiredlush/luna-dns/internal/config"
+	"github.com/wiredlush/luna-dns/pkg/config"
+	"github.com/wiredlush/luna-dns/pkg/tree"
 )
 
 type testResponseWrtiter struct {
@@ -210,5 +214,103 @@ func TestEngineForward(t *testing.T) {
 	engine.forward(msg)
 	if len(msg.Answer) == 0 {
 		t.Fail()
+	}
+}
+
+func TestProcessFile(t *testing.T) {
+	tmpfile, err := os.CreateTemp("", "blocklist-*.txt")
+	if err != nil {
+		t.Fatalf("Error creating temporary file: %s", err)
+	}
+	defer os.Remove(tmpfile.Name())
+	_, err = tmpfile.Write([]byte("example.com\nexample.net\nexample.org\n"))
+	if err != nil {
+		t.Fatalf("Error writing to temporary file: %s", err)
+	}
+	err = tmpfile.Close()
+	if err != nil {
+		t.Fatalf("Error closing temporary file: %s", err)
+	}
+
+	engine, _ := NewEngine(&config.Config{
+		Addr:    "127.0.0.1:53555",
+		Network: "udp",
+		DNS: []config.DNS{
+			{
+				Addr:    "8.8.8.8:53",
+				Network: "udp",
+			},
+			{
+				Addr:    "8.8.4.4:53",
+				Network: "udp",
+			},
+		},
+	})
+
+	engine.processFile("file://"+tmpfile.Name(), engine.blocklistTree)
+
+	expected := []string{"example.com", "example.net", "example.org"}
+	for _, domain := range expected {
+		_, err := engine.blocklistTree.Search(domain)
+		if err != nil {
+			t.Errorf("Expected domain %s not found in tree", domain)
+		}
+	}
+}
+
+func TestProcessRemote(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/valid.txt":
+			fmt.Fprint(w, `
+				example.com
+				example.net
+				example.org
+			`)
+		case "/invalid.txt":
+			fmt.Fprint(w, `
+				invalid entry				
+			`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	engine, _ := NewEngine(&config.Config{
+		Addr:    "127.0.0.1:53555",
+		Network: "udp",
+		DNS: []config.DNS{
+			{
+				Addr:    "8.8.8.8:53",
+				Network: "udp",
+			},
+			{
+				Addr:    "8.8.4.4:53",
+				Network: "udp",
+			},
+		},
+	})
+
+	engine.processRemote(server.URL+"/valid.txt", engine.blocklistTree)
+
+	expectedValid := []string{"example.com", "example.net", "example.org"}
+	for _, domain := range expectedValid {
+		_, err := engine.blocklistTree.Search(domain)
+		if err != nil {
+			t.Errorf("Expected domain %s not found in valid hosts tree",
+				domain)
+		}
+	}
+
+	engine.blocklistTree = tree.NewTree()
+	engine.processRemote(server.URL+"/invalid.txt", engine.blocklistTree)
+
+	expectedInvalid := []string{"invalid entry"}
+	for _, domain := range expectedInvalid {
+		_, err := engine.blocklistTree.Search(domain)
+		if err == nil {
+			t.Errorf("Invalid domain %s found in hosts tree", domain)
+		}
 	}
 }

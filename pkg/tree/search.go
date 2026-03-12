@@ -1,10 +1,9 @@
 package tree
 
 import (
-	"github.com/wiredlush/luna-dns/internal/entry"
+	"github.com/wiredlush/luna-dns/pkg/entry"
 )
 
-// Search - Search for a domain in DNS tree
 func (t *Tree) Search(domain string) (string, error) {
 	entry, err := entry.NewEntry(domain, "")
 	if err != nil {
