@@ -58,14 +58,33 @@ func (d *Database) CreateUser(username, password string) (*User, error) {
 	return user, nil
 }
 
+func (d *Database) FindByID(id uint) (*User, error) {
+	var user User
+	if err := d.db.First(&user, id).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (d *Database) DeleteUser(id uint) error {
-	return d.db.Delete(&User{}, id).Error
+	return d.db.Unscoped().Delete(&User{}, id).Error
 }
 
 func (d *Database) CountUsers() (int64, error) {
 	var count int64
 	err := d.db.Model(&User{}).Count(&count).Error
 	return count, err
+}
+
+func (d *Database) UpdatePassword(username, password string) error {
+	user, err := d.FindByUsername(username)
+	if err != nil {
+		return err
+	}
+	if err := user.SetPassword(password); err != nil {
+		return err
+	}
+	return d.db.Save(user).Error
 }
 
 func (d *Database) seedDefaultAdmin() error {

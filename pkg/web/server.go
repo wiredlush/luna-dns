@@ -24,6 +24,7 @@ type Server struct {
 	Cert     string
 	Key      string
 	DB       string
+	DnsAddr  string
 	db       *database.Database
 	app      *fiber.App
 	sessions *sessionStore
@@ -45,6 +46,7 @@ func startFromFlags(args []string) error {
 	fs.StringVar(&server.Cert, "web-cert", "", "TLS certificate path")
 	fs.StringVar(&server.Key, "web-key", "", "TLS key path")
 	fs.StringVar(&server.DB, "db", defaultDBPath(), "SQLite database path")
+	fs.StringVar(&server.DnsAddr, "dns-addr", "127.0.0.1:53", "DNS server address for status probe")
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -88,19 +90,31 @@ func (s *Server) Start() error {
 	s.app.Post("/api/logout", s.handleLogout)
 
 	s.app.Use("/api", s.authMiddleware)
-	s.app.Get("/api/health", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{"status": "ok"})
-	})
+	s.app.Get("/api/status", s.handleStatus)
 
 	s.app.Get("/api/users", s.listUsers)
 	s.app.Post("/api/users", s.createUser)
 	s.app.Delete("/api/users/:id", s.deleteUser)
+	s.app.Post("/api/change-password", s.changePassword)
+
+	s.app.Get("/api/sessions", s.listSessions)
+	s.app.Post("/api/sessions/logout-all", s.logoutAll)
+	s.app.Get("/api/audit-logs", s.listAuditLogs)
 
 	s.app.Use("/", filesystem.New(filesystem.Config{
 		Root:       http.FS(staticFS),
 		PathPrefix: "static",
 		Browse:     false,
 	}))
+
+	s.app.Use(func(c *fiber.Ctx) error {
+		data, err := staticFS.ReadFile("static/index.html")
+		if err != nil {
+			return c.SendStatus(fiber.StatusNotFound)
+		}
+		c.Set("Content-Type", "text/html")
+		return c.Send(data)
+	})
 
 	ln, err := net.Listen("tcp", s.Addr)
 	if err != nil {

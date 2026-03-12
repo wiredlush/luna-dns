@@ -23,7 +23,7 @@ func Open(path string) (*Database, error) {
 
 	d := &Database{db: db}
 
-	if err := db.AutoMigrate(&User{}); err != nil {
+	if err := db.AutoMigrate(&User{}, &AuditLog{}); err != nil {
 		return nil, err
 	}
 
