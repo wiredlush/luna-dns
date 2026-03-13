@@ -18,7 +18,7 @@ type userResponse struct {
 func (s *Server) listUsers(c *fiber.Ctx) error {
 	users, err := s.db.ListUsers()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to list users"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to list users"})
 	}
 
 	res := make([]userResponse, len(users))
@@ -36,20 +36,20 @@ type createUserRequest struct {
 func (s *Server) createUser(c *fiber.Ctx) error {
 	var req createUserRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
 	}
 
 	if req.Username == "" || req.Password == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "username and password are required"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Username and password are required"})
 	}
 
 	user, err := s.db.CreateUser(req.Username, req.Password)
 	if err != nil {
-		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "username already exists"})
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "Username already exists"})
 	}
 
 	actor := s.sessions.username(c.Cookies("session"))
-	s.db.LogAudit(actor, "user_create", "created user "+req.Username, c.IP())
+	s.db.LogAudit(actor, "user_create", "Created user "+req.Username, c.IP())
 
 	return c.Status(fiber.StatusCreated).JSON(userResponse{
 		ID:        user.ID,
@@ -61,32 +61,32 @@ func (s *Server) createUser(c *fiber.Ctx) error {
 func (s *Server) deleteUser(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user id"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user id"})
 	}
 
 	count, err := s.db.CountUsers()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to check users"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to check users"})
 	}
 	if count <= 1 {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "cannot delete the last user"})
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Cannot delete the last user"})
 	}
 
 	target, err := s.db.FindByID(uint(id))
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "user not found"})
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
 	}
 
 	actor := s.sessions.username(c.Cookies("session"))
 	if target.Username == actor {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "cannot delete yourself"})
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Cannot delete yourself"})
 	}
 
 	if err := s.db.DeleteUser(uint(id)); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to delete user"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete user"})
 	}
 
-	s.db.LogAudit(actor, "user_delete", "deleted user "+target.Username, c.IP())
+	s.db.LogAudit(actor, "user_delete", "Deleted user "+target.Username, c.IP())
 
 	return c.JSON(fiber.Map{"ok": true})
 }
@@ -99,29 +99,29 @@ type changePasswordRequest struct {
 func (s *Server) changePassword(c *fiber.Ctx) error {
 	var req changePasswordRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
 	}
 
 	if len(req.NewPassword) < 8 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "password must be at least 8 characters"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Password must be at least 8 characters"})
 	}
 
 	username := s.sessions.username(c.Cookies("session"))
 	if username == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
 
 	user, err := s.db.FindByUsername(username)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "user not found"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "User not found"})
 	}
 
 	if !user.CheckPassword(req.CurrentPassword) {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "current password is incorrect"})
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Current password is incorrect"})
 	}
 
 	if err := s.db.UpdatePassword(username, req.NewPassword); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to update password"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update password"})
 	}
 
 	s.db.LogAudit(username, "password_change", "", c.IP())

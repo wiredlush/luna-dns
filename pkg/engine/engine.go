@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/miekg/dns"
@@ -20,6 +21,7 @@ type Engine struct {
 	cache           *cache.Cache
 	addr            string
 	network         string
+	dnsMu           sync.RWMutex
 	dns             []config.DNS
 	forwardIndex    int
 	server          *dns.Server
@@ -40,17 +42,26 @@ func NewEngine(config *config.Config) (*Engine, error) {
 		blockListUpdate = 720
 	}
 
+	cacheTTL := config.CacheTTL
+	if cacheTTL == 0 {
+		cacheTTL = 14400
+	}
+
 	return &Engine{
 		hostTree:        hosts,
 		blocklistTree:   tree.NewTree(),
 		blocklists:      config.Blocklists,
 		blocklistUpdate: blockListUpdate,
-		cache:           cache.NewCache(time.Duration(config.CacheTTL) * time.Second),
+		cache:           cache.NewCache(time.Duration(cacheTTL) * time.Second),
 		addr:            config.Addr,
 		network:         config.Network,
 		dns:             config.DNS,
 		forwardIndex:    0,
 	}, nil
+}
+
+func (e *Engine) Running() bool {
+	return e.server != nil
 }
 
 func (e *Engine) Start() error {
@@ -67,6 +78,72 @@ func (e *Engine) Start() error {
 	dns.HandleFunc(".", e.handler)
 	e.server = &dns.Server{Addr: e.addr, Net: e.network}
 	return e.server.ListenAndServe()
+}
+
+func (e *Engine) StartBackground() error {
+	if e.server != nil {
+		return fmt.Errorf("engine is already running")
+	}
+
+	e.cache.Reset()
+	go e.BlocklistsRoutine()
+	go e.cache.CacheRoutine()
+
+	dns.HandleFunc(".", e.handler)
+
+	started := make(chan struct{})
+	e.server = &dns.Server{
+		Addr: e.addr,
+		Net:  e.network,
+		NotifyStartedFunc: func() {
+			close(started)
+		},
+	}
+
+	errCh := make(chan error, 1)
+	go func() {
+		if err := e.server.ListenAndServe(); err != nil {
+			errCh <- err
+		}
+	}()
+
+	select {
+	case err := <-errCh:
+		e.server = nil
+		log.Printf("Failed to listen on %s (%s): %v", e.addr, e.network, err)
+		return err
+	case <-started:
+		log.Printf("Listening on %s (%s)\n", e.addr, e.network)
+		return nil
+	}
+}
+
+func (e *Engine) SetForwarders(forwarders []config.DNS) {
+	e.dnsMu.Lock()
+	defer e.dnsMu.Unlock()
+
+	old := make(map[string]bool, len(e.dns))
+	for _, d := range e.dns {
+		old[d.Addr+"|"+d.Network] = true
+	}
+	new := make(map[string]bool, len(forwarders))
+	for _, d := range forwarders {
+		new[d.Addr+"|"+d.Network] = true
+	}
+
+	for _, d := range forwarders {
+		if !old[d.Addr+"|"+d.Network] {
+			log.Printf("Forwarder added: %s (%s)", d.Addr, d.Network)
+		}
+	}
+	for _, d := range e.dns {
+		if !new[d.Addr+"|"+d.Network] {
+			log.Printf("Forwarder removed: %s (%s)", d.Addr, d.Network)
+		}
+	}
+
+	e.dns = forwarders
+	e.forwardIndex = 0
 }
 
 func (e *Engine) Stop() error {

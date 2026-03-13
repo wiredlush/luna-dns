@@ -10,11 +10,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/wiredlush/luna-dns/pkg/config"
 	"github.com/wiredlush/luna-dns/pkg/database"
+	"github.com/wiredlush/luna-dns/pkg/engine"
 )
 
 var StartFunc func([]string) error
@@ -24,10 +27,11 @@ type Server struct {
 	Cert     string
 	Key      string
 	DB       string
-	DnsAddr  string
 	db       *database.Database
 	app      *fiber.App
 	sessions *sessionStore
+	engine   *engine.Engine
+	mu       sync.Mutex
 }
 
 func defaultDBPath() string {
@@ -46,7 +50,6 @@ func startFromFlags(args []string) error {
 	fs.StringVar(&server.Cert, "web-cert", "", "TLS certificate path")
 	fs.StringVar(&server.Key, "web-key", "", "TLS key path")
 	fs.StringVar(&server.DB, "db", defaultDBPath(), "SQLite database path")
-	fs.StringVar(&server.DnsAddr, "dns-addr", "127.0.0.1:53", "DNS server address for status probe")
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -80,6 +83,24 @@ func (s *Server) Start() error {
 
 	s.sessions = newSessionStore()
 
+	if dnsCfg, err := s.db.GetDnsConfig(); err == nil && dnsCfg.AutoStart {
+		dnsServers := s.loadForwarders()
+		cfg := &config.Config{
+			Addr:     dnsCfg.ListenAddr(),
+			Network:  dnsCfg.Network,
+			CacheTTL: dnsCfg.CacheTTL,
+			DNS:      dnsServers,
+		}
+		eng, err := engine.NewEngine(cfg)
+		if err != nil {
+			log.Printf("Failed to create DNS engine: %v", err)
+		} else if err := eng.StartBackground(); err != nil {
+			log.Printf("Failed to start DNS engine: %v", err)
+		} else {
+			s.engine = eng
+		}
+	}
+
 	s.app = fiber.New(fiber.Config{
 		DisableStartupMessage: true,
 	})
@@ -100,6 +121,16 @@ func (s *Server) Start() error {
 	s.app.Get("/api/sessions", s.listSessions)
 	s.app.Post("/api/sessions/logout-all", s.logoutAll)
 	s.app.Get("/api/audit-logs", s.listAuditLogs)
+
+	s.app.Get("/api/dns/config", s.getDnsConfig)
+	s.app.Post("/api/dns/config", s.saveDnsConfig)
+	s.app.Post("/api/dns/start", s.startDns)
+	s.app.Post("/api/dns/stop", s.stopDns)
+	s.app.Post("/api/dns/restart", s.restartDns)
+
+	s.app.Get("/api/dns/forwarders", s.listForwarders)
+	s.app.Post("/api/dns/forwarders", s.createForwarder)
+	s.app.Delete("/api/dns/forwarders/:id", s.deleteForwarder)
 
 	s.app.Use("/", filesystem.New(filesystem.Config{
 		Root:       http.FS(staticFS),

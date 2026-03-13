@@ -124,18 +124,18 @@ const sessionTTL = 1 * time.Hour
 func (s *Server) handleLogin(c *fiber.Ctx) error {
 	var req loginRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
 	}
 
 	user, err := s.db.FindByUsername(req.Username)
 	if err != nil || !user.CheckPassword(req.Password) {
-		s.db.LogAudit(req.Username, "login_failed", "invalid credentials", c.IP())
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid credentials"})
+		s.db.LogAudit(req.Username, "login_failed", "Invalid credentials", c.IP())
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})
 	}
 
 	sid, err := s.sessions.create(user.Username, c.IP(), sessionTTL)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create session"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create session"})
 	}
 
 	s.db.LogAudit(user.Username, "login", "", c.IP())
@@ -184,7 +184,7 @@ func (s *Server) logoutAll(c *fiber.Ctx) error {
 	sid := c.Cookies("session")
 	username := s.sessions.username(sid)
 	if username == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
 
 	s.sessions.deleteByUsername(username, sid)
@@ -196,7 +196,7 @@ func (s *Server) logoutAll(c *fiber.Ctx) error {
 func (s *Server) authMiddleware(c *fiber.Ctx) error {
 	sid := c.Cookies("session")
 	if sid == "" || !s.sessions.valid(sid) {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
 	return c.Next()
 }

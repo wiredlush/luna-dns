@@ -32,7 +32,14 @@ func (e *Engine) forward(message *dns.Msg) {
 		return
 	}
 
+	e.dnsMu.RLock()
 	forwardChain := e.buildForwardChain()
+	e.dnsMu.RUnlock()
+
+	if len(forwardChain) == 0 {
+		return
+	}
+
 	for _, server := range forwardChain {
 		err := e.forwardRequest(server, message)
 		if err == nil {
@@ -42,7 +49,11 @@ func (e *Engine) forward(message *dns.Msg) {
 		log.Printf("%s (%s): %s\n", server.Addr, server.Network, err)
 	}
 
-	e.forwardIndex = (e.forwardIndex + 1) % len(e.dns)
+	e.dnsMu.Lock()
+	if len(e.dns) > 0 {
+		e.forwardIndex = (e.forwardIndex + 1) % len(e.dns)
+	}
+	e.dnsMu.Unlock()
 }
 
 func (e *Engine) buildForwardChain() []config.DNS {

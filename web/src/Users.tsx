@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { UserPlus, Trash2, X } from "lucide-react";
+import { Users as UsersIcon, UserPlus, User, Calendar, Trash2, X, Plus } from "lucide-react";
 import toast from "react-hot-toast";
+import Avatar from "./Avatar";
 import { colors } from "./theme";
 
 function capitalize(s: string): string {
@@ -75,7 +76,7 @@ export default function Users() {
   }
 
   return (
-    <div style={{ padding: "2rem" }}>
+    <div style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       {showForm && (
         <div
           onClick={() => { setShowForm(false); setError(""); }}
@@ -275,89 +276,121 @@ export default function Users() {
         </div>
       )}
 
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: "8px",
-          border: `1px solid ${colors.border}`,
-          overflow: "auto",
-        }}>
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            fontSize: "0.9rem",
-          }}>
-          <thead>
-            <tr
-              style={{
-                borderBottom: `1px solid ${colors.border}`,
-                textAlign: "left",
-              }}>
-              <th style={thStyle}>Username</th>
-              <th style={thStyle}>Created</th>
-              <th style={{ ...thStyle, width: "1%", whiteSpace: "nowrap" }}>
-                <button
-                  onClick={() => {
-                    setShowForm(!showForm);
-                    setError("");
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.3rem",
-                    padding: "0.3rem 0.6rem",
-                    background: colors.primary,
-                    color: "#fff",
-                    border: `1px solid ${colors.primary}`,
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                    fontFamily: "inherit",
-                  }}>
-                  <UserPlus size={14} />
-                </button>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
+      <div style={cardStyle}>
+        <h2 style={cardTitleStyle}>
+          <UsersIcon size={18} />
+          Users
+        </h2>
+        <div style={{ overflow: "auto" }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              fontSize: "0.85rem",
+            }}>
+            <thead>
               <tr
-                key={user.id}
-                style={{ borderBottom: `1px solid ${colors.border}` }}>
-                <td style={tdStyle}>{user.username}</td>
-                <td style={tdStyle}>
-                  {new Date(user.created_at).toLocaleDateString()}
-                </td>
-                <td style={tdStyle}>
-                  <button
-                    onClick={() => setDeleteTarget(user)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.3rem",
-                      padding: "0.3rem 0.6rem",
-                      background: "transparent",
-                      color: colors.primary,
-                      border: `1px solid ${colors.primary}`,
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      fontSize: "0.8rem",
-                      fontFamily: "inherit",
-                    }}>
-                    <Trash2 size={14} />
-                  </button>
-                </td>
+                style={{
+                  borderBottom: `1px solid ${colors.border}`,
+                  textAlign: "left",
+                }}>
+                <th style={thStyle}><span style={thInnerStyle}><User size={12} /> Username</span></th>
+                <th style={thStyle}><span style={thInnerStyle}><Calendar size={12} /> Created</span></th>
+                <th style={{ ...thStyle, width: "1%" }}></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr
+                  key={user.id}
+                  style={{ borderBottom: `1px solid ${colors.border}` }}>
+                  <td style={{ ...tdStyle, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <Avatar name={user.username} />
+                    {user.username}
+                  </td>
+                  <td style={tdStyle}>
+                    <span style={cellIconStyle}>
+                      <Calendar size={13} />
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>
+                    <button
+                      onClick={() => setDeleteTarget(user)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "0.25rem",
+                        background: "transparent",
+                        border: "none",
+                        color: "#dc2626",
+                        cursor: "pointer",
+                      }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {users.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={3}
+                    style={{ ...tdStyle, color: "#64748b", textAlign: "center" }}>
+                    No users
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.75rem", paddingTop: "0.75rem" }}>
+          <button
+            onClick={() => {
+              setShowForm(true);
+              setError("");
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.3rem",
+              padding: "0.6rem 1.2rem",
+              background: colors.primary,
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: 600,
+              fontSize: "0.85rem",
+              fontFamily: "inherit",
+            }}>
+            <Plus size={14} />
+            Add User
+          </button>
+        </div>
       </div>
-
     </div>
   );
 }
+
+const cardStyle: React.CSSProperties = {
+  width: "100%",
+  background: "#fff",
+  borderRadius: "8px",
+  border: `1px solid ${colors.border}`,
+  padding: "1.5rem",
+  boxSizing: "border-box",
+};
+
+const cardTitleStyle: React.CSSProperties = {
+  margin: "0 0 1.25rem",
+  paddingBottom: "0.75rem",
+  borderBottom: `1px solid ${colors.border}`,
+  fontSize: "1rem",
+  fontWeight: 600,
+  display: "flex",
+  alignItems: "center",
+  gap: "0.5rem",
+};
 
 const inputStyle: React.CSSProperties = {
   padding: "0.6rem 0.8rem",
@@ -370,13 +403,26 @@ const inputStyle: React.CSSProperties = {
 };
 
 const thStyle: React.CSSProperties = {
-  padding: "0.75rem 1rem",
+  padding: "0.5rem 0.75rem",
   fontWeight: 600,
-  fontSize: "0.8rem",
+  fontSize: "0.75rem",
   textTransform: "uppercase",
   color: "#64748b",
 };
 
+const thInnerStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "0.3rem",
+};
+
+const cellIconStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "0.4rem",
+  color: "#64748b",
+};
+
 const tdStyle: React.CSSProperties = {
-  padding: "0.75rem 1rem",
+  padding: "0.5rem 0.75rem",
 };

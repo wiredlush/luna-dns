@@ -1,5 +1,21 @@
 import { useEffect, useState } from "react";
-import { Lock, Monitor, ScrollText, LogOut } from "lucide-react";
+import {
+  Lock,
+  KeyRound,
+  Monitor,
+  ScrollText,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  User,
+  Globe,
+  Calendar,
+  Clock,
+  Activity,
+  FileText,
+} from "lucide-react";
+import toast from "react-hot-toast";
+import Avatar from "./Avatar";
 import { colors } from "./theme";
 
 type Strength = "weak" | "fair" | "good" | "strong";
@@ -58,16 +74,26 @@ const actionColors: Record<string, string> = {
   user_delete: "#dc2626",
 };
 
+const actionLabels: Record<string, string> = {
+  login: "Login",
+  login_failed: "Login Failed",
+  logout: "Logout",
+  logout_all: "Logout All",
+  password_change: "Password Change",
+  user_create: "User Create",
+  user_delete: "User Delete",
+};
+
 export default function Security() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditEntry[]>([]);
+  const [auditPage, setAuditPage] = useState(0);
+  const auditPerPage = 10;
 
   useEffect(() => {
     fetchSessions();
@@ -84,7 +110,10 @@ export default function Security() {
   function fetchAuditLogs() {
     fetch("/api/audit-logs?limit=50", { credentials: "same-origin" })
       .then((r) => r.json())
-      .then((data) => setAuditLogs(data || []))
+      .then((data) => {
+        setAuditLogs(data || []);
+        setAuditPage(0);
+      })
       .catch(() => {});
   }
 
@@ -97,6 +126,12 @@ export default function Security() {
     fetchAuditLogs();
   }
 
+  const totalPages = Math.ceil(auditLogs.length / auditPerPage);
+  const pagedLogs = auditLogs.slice(
+    auditPage * auditPerPage,
+    (auditPage + 1) * auditPerPage,
+  );
+
   const strength = newPassword ? getStrength(newPassword) : null;
   const mismatch = confirmPassword !== "" && newPassword !== confirmPassword;
   const tooShort = newPassword !== "" && newPassword.length < 8;
@@ -108,8 +143,6 @@ export default function Security() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError("");
-    setSuccess("");
     setLoading(true);
 
     try {
@@ -125,17 +158,17 @@ export default function Security() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || "Failed to change password");
+        toast.error(data.error || "Failed to change password");
         return;
       }
 
-      setSuccess("Password changed successfully");
+      toast.success("Password changed successfully");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       fetchAuditLogs();
     } catch {
-      setError("Network error");
+      toast.error("Network error");
     } finally {
       setLoading(false);
     }
@@ -162,11 +195,7 @@ export default function Security() {
             type="password"
             placeholder="Current password"
             value={currentPassword}
-            onChange={(e) => {
-              setCurrentPassword(e.target.value);
-              setError("");
-              setSuccess("");
-            }}
+            onChange={(e) => setCurrentPassword(e.target.value)}
             required
             style={inputStyle}
           />
@@ -175,11 +204,7 @@ export default function Security() {
               type="password"
               placeholder="New password"
               value={newPassword}
-              onChange={(e) => {
-                setNewPassword(e.target.value);
-                setError("");
-                setSuccess("");
-              }}
+              onChange={(e) => setNewPassword(e.target.value)}
               required
               style={inputStyle}
             />
@@ -222,11 +247,7 @@ export default function Security() {
               type="password"
               placeholder="Confirm new password"
               value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                setError("");
-                setSuccess("");
-              }}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               required
               style={{
                 ...inputStyle,
@@ -239,33 +260,33 @@ export default function Security() {
               </span>
             )}
           </div>
-          {error && (
-            <span style={{ fontSize: "0.85rem", color: "#dc2626" }}>
-              {error}
-            </span>
-          )}
-          {success && (
-            <span style={{ fontSize: "0.85rem", color: "#16a34a" }}>
-              {success}
-            </span>
-          )}
-          <button
-            type="submit"
-            disabled={!canSubmit}
+          <div
             style={{
-              alignSelf: "flex-end",
-              padding: "0.6rem 1.2rem",
-              background: canSubmit ? colors.primary : colors.border,
-              color: canSubmit ? "#fff" : "#9ca3af",
-              border: "none",
-              borderRadius: "6px",
-              cursor: canSubmit ? "pointer" : "not-allowed",
-              fontWeight: 600,
-              fontSize: "0.85rem",
-              fontFamily: "inherit",
+              display: "flex",
+              justifyContent: "flex-end",
+              paddingTop: "0.75rem",
             }}>
-            {loading ? "Saving..." : "Change Password"}
-          </button>
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.3rem",
+                padding: "0.6rem 1.2rem",
+                background: canSubmit ? colors.primary : colors.border,
+                color: canSubmit ? "#fff" : "#9ca3af",
+                border: "none",
+                borderRadius: "6px",
+                cursor: canSubmit ? "pointer" : "not-allowed",
+                fontWeight: 600,
+                fontSize: "0.85rem",
+                fontFamily: "inherit",
+              }}>
+              <KeyRound size={14} />
+              {loading ? "Saving..." : "Change Password"}
+            </button>
+          </div>
         </form>
       </div>
 
@@ -298,11 +319,11 @@ export default function Security() {
               display: "flex",
               alignItems: "center",
               gap: "0.3rem",
-              padding: "0.3rem 0.6rem",
+              padding: "0.6rem 1.2rem",
               background: "transparent",
               color: colors.primary,
               border: `1px solid ${colors.primary}`,
-              borderRadius: "4px",
+              borderRadius: "6px",
               cursor: "pointer",
               fontSize: "0.8rem",
               fontFamily: "inherit",
@@ -324,10 +345,26 @@ export default function Security() {
                   borderBottom: `1px solid ${colors.border}`,
                   textAlign: "left",
                 }}>
-                <th style={thStyle}>User</th>
-                <th style={thStyle}>IP</th>
-                <th style={thStyle}>Created</th>
-                <th style={thStyle}>Expires</th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <User size={12} /> User
+                  </span>
+                </th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <Globe size={12} /> IP
+                  </span>
+                </th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <Calendar size={12} /> Created
+                  </span>
+                </th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <Clock size={12} /> Expires
+                  </span>
+                </th>
                 <th style={{ ...thStyle, width: "1%" }}></th>
               </tr>
             </thead>
@@ -339,13 +376,31 @@ export default function Security() {
                     borderBottom: `1px solid ${colors.border}`,
                     background: s.current ? "rgba(239,65,54,0.04)" : undefined,
                   }}>
-                  <td style={tdStyle}>{s.username}</td>
-                  <td style={tdStyle}>{s.ip}</td>
-                  <td style={tdStyle}>
-                    {new Date(s.created_at).toLocaleString()}
+                  <td
+                    style={{
+                      ...tdStyle,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}>
+                    <Avatar name={s.username} />
+                    {s.username}
                   </td>
                   <td style={tdStyle}>
-                    {new Date(s.expires).toLocaleString()}
+                    <span style={cellIconStyle}>
+                      <Globe size={13} /> {s.ip}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>
+                    <span style={cellIconStyle}>
+                      <Calendar size={13} />{" "}
+                      {new Date(s.created_at).toLocaleString()}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>
+                    <span style={cellIconStyle}>
+                      <Clock size={13} /> {new Date(s.expires).toLocaleString()}
+                    </span>
                   </td>
                   <td style={tdStyle}>
                     {s.current && (
@@ -353,10 +408,14 @@ export default function Security() {
                         style={{
                           fontSize: "0.7rem",
                           color: "#16a34a",
+                          background: "rgba(22,163,106,0.08)",
+                          border: "1px solid #16a34a",
+                          borderRadius: "9999px",
+                          padding: "0.15rem 0.5rem",
                           fontWeight: 600,
                           whiteSpace: "nowrap",
                         }}>
-                        current
+                        Current
                       </span>
                     )}
                   </td>
@@ -386,40 +445,95 @@ export default function Security() {
                   borderBottom: `1px solid ${colors.border}`,
                   textAlign: "left",
                 }}>
-                <th style={thStyle}>Timestamp</th>
-                <th style={thStyle}>User</th>
-                <th style={thStyle}>Action</th>
-                <th style={thStyle}>Detail</th>
-                <th style={thStyle}>IP</th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <Calendar size={12} /> Timestamp
+                  </span>
+                </th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <User size={12} /> User
+                  </span>
+                </th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <Activity size={12} /> Action
+                  </span>
+                </th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <FileText size={12} /> Detail
+                  </span>
+                </th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <Globe size={12} /> IP
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody>
-              {auditLogs.map((log) => (
+              {pagedLogs.map((log) => (
                 <tr
                   key={log.id}
                   style={{ borderBottom: `1px solid ${colors.border}` }}>
                   <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
-                    {new Date(log.timestamp).toLocaleString()}
-                  </td>
-                  <td style={tdStyle}>{log.username}</td>
-                  <td style={tdStyle}>
-                    <span
-                      style={{
-                        color: actionColors[log.action] || colors.text,
-                        fontWeight: 500,
-                      }}>
-                      {log.action}
+                    <span style={cellIconStyle}>
+                      <Calendar size={13} />{" "}
+                      {new Date(log.timestamp).toLocaleString()}
                     </span>
                   </td>
-                  <td style={tdStyle}>{log.detail || "—"}</td>
-                  <td style={tdStyle}>{log.ip}</td>
+                  <td
+                    style={{
+                      ...tdStyle,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}>
+                    <Avatar name={log.username} />
+                    {log.username}
+                  </td>
+                  <td style={tdStyle}>
+                    {(() => {
+                      const c = actionColors[log.action] || colors.text;
+                      return (
+                        <span
+                          style={{
+                            fontSize: "0.7rem",
+                            color: c,
+                            background: c + "14",
+                            border: `1px solid ${c}`,
+                            borderRadius: "9999px",
+                            padding: "0.15rem 0.5rem",
+                            fontWeight: 600,
+                            whiteSpace: "nowrap",
+                          }}>
+                          {actionLabels[log.action] || log.action}
+                        </span>
+                      );
+                    })()}
+                  </td>
+                  <td style={tdStyle}>
+                    <span style={cellIconStyle}>
+                      <FileText size={13} /> {log.detail || "—"}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>
+                    <span style={cellIconStyle}>
+                      <Globe size={13} /> {log.ip}
+                    </span>
+                  </td>
                 </tr>
               ))}
-              {auditLogs.length === 0 && (
+              {pagedLogs.length === 0 && (
                 <tr>
                   <td
                     colSpan={5}
-                    style={{ ...tdStyle, color: "#64748b", textAlign: "center" }}>
+                    style={{
+                      ...tdStyle,
+                      color: "#64748b",
+                      textAlign: "center",
+                    }}>
                     No entries yet
                   </td>
                 </tr>
@@ -427,6 +541,39 @@ export default function Security() {
             </tbody>
           </table>
         </div>
+        {totalPages > 1 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginTop: "0.75rem",
+              paddingTop: "0.75rem",
+              borderTop: `1px solid ${colors.border}`,
+              fontSize: "0.8rem",
+              color: "#64748b",
+            }}>
+            <span>
+              {auditPage * auditPerPage + 1}–
+              {Math.min((auditPage + 1) * auditPerPage, auditLogs.length)} of{" "}
+              {auditLogs.length}
+            </span>
+            <div style={{ display: "flex", gap: "0.25rem" }}>
+              <button
+                onClick={() => setAuditPage((p) => p - 1)}
+                disabled={auditPage === 0}
+                style={paginationBtnStyle(auditPage === 0)}>
+                <ChevronLeft size={14} />
+              </button>
+              <button
+                onClick={() => setAuditPage((p) => p + 1)}
+                disabled={auditPage + 1 >= totalPages}
+                style={paginationBtnStyle(auditPage + 1 >= totalPages)}>
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -472,6 +619,32 @@ const thStyle: React.CSSProperties = {
   color: "#64748b",
 };
 
+const thInnerStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "0.3rem",
+};
+
+const cellIconStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "0.4rem",
+  color: "#64748b",
+};
+
 const tdStyle: React.CSSProperties = {
   padding: "0.5rem 0.75rem",
 };
+
+function paginationBtnStyle(disabled: boolean): React.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    padding: "0.3rem",
+    background: "transparent",
+    border: `1px solid ${disabled ? colors.border : "#d1d5db"}`,
+    borderRadius: "4px",
+    color: disabled ? "#d1d5db" : "#374151",
+    cursor: disabled ? "not-allowed" : "pointer",
+  };
+}

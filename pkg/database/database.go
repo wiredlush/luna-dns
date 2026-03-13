@@ -23,11 +23,19 @@ func Open(path string) (*Database, error) {
 
 	d := &Database{db: db}
 
-	if err := db.AutoMigrate(&User{}, &AuditLog{}); err != nil {
+	if err := db.AutoMigrate(&User{}, &AuditLog{}, &DnsConfig{}, &DnsForwarder{}); err != nil {
 		return nil, err
 	}
 
 	if err := d.seedDefaultAdmin(); err != nil {
+		return nil, err
+	}
+
+	if err := d.seedDefaultDnsConfig(); err != nil {
+		return nil, err
+	}
+
+	if err := d.seedDefaultDnsForwarders(); err != nil {
 		return nil, err
 	}
 

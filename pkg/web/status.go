@@ -3,10 +3,7 @@
 package web
 
 import (
-	"time"
-
 	"github.com/gofiber/fiber/v2"
-	"github.com/miekg/dns"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/mem"
 )
@@ -39,13 +36,9 @@ func (s *Server) handleStatus(c *fiber.Ctx) error {
 }
 
 func (s *Server) probeDNS() dnsStatus {
-	m := new(dns.Msg)
-	m.SetQuestion("localhost.", dns.TypeA)
-
-	client := &dns.Client{Timeout: 500 * time.Millisecond}
-	_, _, err := client.Exchange(m, s.DnsAddr)
-
-	return dnsStatus{Running: err == nil}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return dnsStatus{Running: s.engine != nil && s.engine.Running()}
 }
 
 func getCPUUsage() cpuStatus {

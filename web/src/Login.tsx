@@ -96,11 +96,11 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
           type="submit"
           disabled={loading}
           style={{
-            padding: "0.75rem",
+            padding: "0.6rem 1.2rem",
             background: colors.primary,
             color: "#fff",
             border: "none",
-            borderRadius: "4px",
+            borderRadius: "6px",
             cursor: loading ? "wait" : "pointer",
             fontWeight: 600,
           }}>
