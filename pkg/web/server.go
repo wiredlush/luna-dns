@@ -90,6 +90,7 @@ func (s *Server) Start() error {
 			Network:  dnsCfg.Network,
 			CacheTTL: dnsCfg.CacheTTL,
 			DNS:      dnsServers,
+			Hosts:    s.loadRecords(),
 		}
 		eng, err := engine.NewEngine(cfg)
 		if err != nil {
@@ -131,6 +132,10 @@ func (s *Server) Start() error {
 	s.app.Get("/api/dns/forwarders", s.listForwarders)
 	s.app.Post("/api/dns/forwarders", s.createForwarder)
 	s.app.Delete("/api/dns/forwarders/:id", s.deleteForwarder)
+
+	s.app.Get("/api/dns/records", s.listRecords)
+	s.app.Post("/api/dns/records", s.createRecord)
+	s.app.Delete("/api/dns/records/:id", s.deleteRecord)
 
 	s.app.Use("/", filesystem.New(filesystem.Config{
 		Root:       http.FS(staticFS),

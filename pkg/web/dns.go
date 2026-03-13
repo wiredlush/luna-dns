@@ -108,6 +108,18 @@ func (s *Server) restartDns(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"ok": true, "running": true})
 }
 
+func (s *Server) loadRecords() []config.Host {
+	records, err := s.db.ListDnsRecords()
+	if err != nil {
+		return nil
+	}
+	hosts := make([]config.Host, len(records))
+	for i, r := range records {
+		hosts[i] = config.Host{Host: r.Host, IP: r.IP}
+	}
+	return hosts
+}
+
 func (s *Server) loadForwarders() []config.DNS {
 	forwarders, err := s.db.ListDnsForwarders()
 	if err != nil {
@@ -131,6 +143,7 @@ func (s *Server) startEngine() error {
 		Network:  cfg.Network,
 		CacheTTL: cfg.CacheTTL,
 		DNS:      s.loadForwarders(),
+		Hosts:    s.loadRecords(),
 	})
 	if err != nil {
 		return fmt.Errorf("Failed to create dns engine: %w", err)

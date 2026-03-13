@@ -11,8 +11,12 @@ import {
   Globe,
   Cable,
   Network,
+  FileText,
+  MapPin,
+  Link,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import Badge from "./Badge";
 import { colors } from "./theme";
 
 interface DnsConfigData {
@@ -28,6 +32,12 @@ interface Forwarder {
   addr: string;
   port: number;
   network: string;
+}
+
+interface DnsRecord {
+  id: number;
+  host: string;
+  ip: string;
 }
 
 export default function DnsServer() {
@@ -46,6 +56,11 @@ export default function DnsServer() {
   const [fwNetwork, setFwNetwork] = useState("udp");
   const [showFwForm, setShowFwForm] = useState(false);
 
+  const [records, setRecords] = useState<DnsRecord[]>([]);
+  const [recHost, setRecHost] = useState("");
+  const [recIP, setRecIP] = useState("");
+  const [showRecForm, setShowRecForm] = useState(false);
+
   const savedConfig = useRef<{
     addr: string;
     port: number;
@@ -56,6 +71,7 @@ export default function DnsServer() {
   useEffect(() => {
     fetchConfig();
     fetchForwarders();
+    fetchRecords();
   }, []);
 
   function fetchConfig() {
@@ -214,6 +230,54 @@ export default function DnsServer() {
       }
       setForwarders((prev) => prev.filter((f) => f.id !== id));
       toast.success("Forwarder removed");
+    } catch {
+      toast.error("Network error");
+    }
+  }
+
+  function fetchRecords() {
+    fetch("/api/dns/records", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((data) => setRecords(data || []))
+      .catch(() => {});
+  }
+
+  async function handleAddRecord() {
+    if (!recHost || !recIP) return;
+    try {
+      const res = await fetch("/api/dns/records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ host: recHost, ip: recIP }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to add record");
+        return;
+      }
+      setRecords((prev) => [...prev, data]);
+      setRecHost("");
+      setRecIP("");
+      toast.success("Record added");
+    } catch {
+      toast.error("Network error");
+    }
+  }
+
+  async function handleDeleteRecord(id: number) {
+    try {
+      const res = await fetch(`/api/dns/records/${id}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.error || "Failed to delete record");
+        return;
+      }
+      setRecords((prev) => prev.filter((r) => r.id !== id));
+      toast.success("Record removed");
     } catch {
       toast.error("Network error");
     }
@@ -447,9 +511,9 @@ export default function DnsServer() {
                 <tr
                   key={f.id}
                   style={{ borderBottom: `1px solid ${colors.border}` }}>
-                  <td style={tdStyle}><span style={cellIconStyle}><Globe size={13} /> {f.addr}</span></td>
-                  <td style={tdStyle}><span style={cellIconStyle}><Cable size={13} /> <span style={{ fontSize: "0.7rem", color: "#64748b", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "9999px", padding: "0.15rem 0.5rem", fontWeight: 600 }}>{f.port}</span></span></td>
-                  <td style={tdStyle}><span style={cellIconStyle}><Network size={13} /> {f.network.toUpperCase()}</span></td>
+                  <td style={tdStyle}><Badge mono>{f.addr}</Badge></td>
+                  <td style={tdStyle}><Badge mono>{f.port}</Badge></td>
+                  <td style={tdStyle}><Badge color={f.network === "tcp" ? "#3b82f6" : "#8b5cf6"}>{f.network.toUpperCase()}</Badge></td>
                   <td style={tdStyle}>
                     <button
                       onClick={() => handleDeleteForwarder(f.id)}
@@ -618,6 +682,229 @@ export default function DnsServer() {
                   border: "none",
                   borderRadius: "6px",
                   cursor: fwAddr && fwPort ? "pointer" : "not-allowed",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  fontFamily: "inherit",
+                }}>
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DNS Records */}
+      <div style={cardStyle}>
+        <h2 style={cardTitleStyle}>
+          <FileText size={18} />
+          DNS Records
+        </h2>
+
+        <p
+          style={{
+            margin: "0 0 0.75rem",
+            fontSize: "0.8rem",
+            color: "#64748b",
+            lineHeight: 1.5,
+          }}>
+          Custom DNS records that take priority over upstream responses.
+        </p>
+
+        <div style={{ overflow: "auto" }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              fontSize: "0.85rem",
+            }}>
+            <thead>
+              <tr
+                style={{
+                  borderBottom: `1px solid ${colors.border}`,
+                  textAlign: "left",
+                }}>
+                <th style={thStyle}><span style={thInnerStyle}><Link size={12} /> Host</span></th>
+                <th style={thStyle}><span style={thInnerStyle}><MapPin size={12} /> IP</span></th>
+                <th style={{ ...thStyle, width: "1%" }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {records.map((r) => (
+                <tr
+                  key={r.id}
+                  style={{ borderBottom: `1px solid ${colors.border}` }}>
+                  <td style={tdStyle}>
+                    <Badge mono>{r.host}</Badge>
+                  </td>
+                  <td style={tdStyle}>
+                    <Badge mono>{r.ip}</Badge>
+                  </td>
+                  <td style={tdStyle}>
+                    <button
+                      onClick={() => handleDeleteRecord(r.id)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "0.25rem",
+                        background: "transparent",
+                        border: "none",
+                        color: "#dc2626",
+                        cursor: "pointer",
+                      }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {records.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={3}
+                    style={{
+                      ...tdStyle,
+                      color: "#64748b",
+                      textAlign: "center",
+                    }}>
+                    No records configured
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginTop: "0.75rem",
+            paddingTop: "0.75rem",
+          }}>
+          <button
+            onClick={() => setShowRecForm(true)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.3rem",
+              padding: "0.6rem 1.2rem",
+              background: colors.primary,
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: 600,
+              fontSize: "0.85rem",
+              fontFamily: "inherit",
+            }}>
+            <Plus size={14} />
+            New Record
+          </button>
+        </div>
+      </div>
+
+      {showRecForm && (
+        <div
+          onClick={() => setShowRecForm(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              borderRadius: "8px",
+              padding: "1.5rem",
+              width: "100%",
+              maxWidth: "400px",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
+            }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1.25rem",
+                paddingBottom: "0.75rem",
+                borderBottom: `1px solid ${colors.border}`,
+              }}>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}>
+                <Plus size={18} />
+                New Record
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowRecForm(false)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "0.3rem",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#64748b",
+                }}>
+                <X size={18} />
+              </button>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+              }}>
+              <div>
+                <label style={labelStyle}>Host</label>
+                <input
+                  type="text"
+                  placeholder="example.com or *.example.com"
+                  value={recHost}
+                  onChange={(e) => setRecHost(e.target.value)}
+                  autoFocus
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>IP Address</label>
+                <input
+                  type="text"
+                  placeholder="127.0.0.1"
+                  value={recIP}
+                  onChange={(e) => setRecIP(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+              <button
+                onClick={() => {
+                  handleAddRecord();
+                  setShowRecForm(false);
+                }}
+                disabled={!recHost || !recIP}
+                style={{
+                  alignSelf: "flex-end",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.3rem",
+                  padding: "0.6rem 1.2rem",
+                  background:
+                    recHost && recIP ? colors.primary : colors.border,
+                  color: recHost && recIP ? "#fff" : "#9ca3af",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: recHost && recIP ? "pointer" : "not-allowed",
                   fontWeight: 600,
                   fontSize: "0.85rem",
                   fontFamily: "inherit",

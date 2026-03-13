@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Avatar from "./Avatar";
+import Badge from "./Badge";
 import { colors } from "./theme";
 
 type Strength = "weak" | "fair" | "good" | "strong";
@@ -350,11 +351,7 @@ export default function Security() {
                     <User size={12} /> User
                   </span>
                 </th>
-                <th style={thStyle}>
-                  <span style={thInnerStyle}>
-                    <Globe size={12} /> IP
-                  </span>
-                </th>
+                <th style={thStyle}><span style={thInnerStyle}><Globe size={12} /> IP</span></th>
                 <th style={thStyle}>
                   <span style={thInnerStyle}>
                     <Calendar size={12} /> Created
@@ -387,9 +384,7 @@ export default function Security() {
                     {s.username}
                   </td>
                   <td style={tdStyle}>
-                    <span style={cellIconStyle}>
-                      <Globe size={13} /> {s.ip}
-                    </span>
+                    <Badge mono>{s.ip}</Badge>
                   </td>
                   <td style={tdStyle}>
                     <span style={cellIconStyle}>
@@ -404,19 +399,7 @@ export default function Security() {
                   </td>
                   <td style={tdStyle}>
                     {s.current && (
-                      <span
-                        style={{
-                          fontSize: "0.7rem",
-                          color: "#16a34a",
-                          background: "rgba(22,163,106,0.08)",
-                          border: "1px solid #16a34a",
-                          borderRadius: "9999px",
-                          padding: "0.15rem 0.5rem",
-                          fontWeight: 600,
-                          whiteSpace: "nowrap",
-                        }}>
-                        Current
-                      </span>
+                      <Badge color="#16a34a">Current</Badge>
                     )}
                   </td>
                 </tr>
@@ -465,11 +448,7 @@ export default function Security() {
                     <FileText size={12} /> Detail
                   </span>
                 </th>
-                <th style={thStyle}>
-                  <span style={thInnerStyle}>
-                    <Globe size={12} /> IP
-                  </span>
-                </th>
+                <th style={thStyle}><span style={thInnerStyle}><Globe size={12} /> IP</span></th>
               </tr>
             </thead>
             <tbody>
@@ -494,24 +473,9 @@ export default function Security() {
                     {log.username}
                   </td>
                   <td style={tdStyle}>
-                    {(() => {
-                      const c = actionColors[log.action] || colors.text;
-                      return (
-                        <span
-                          style={{
-                            fontSize: "0.7rem",
-                            color: c,
-                            background: c + "14",
-                            border: `1px solid ${c}`,
-                            borderRadius: "9999px",
-                            padding: "0.15rem 0.5rem",
-                            fontWeight: 600,
-                            whiteSpace: "nowrap",
-                          }}>
-                          {actionLabels[log.action] || log.action}
-                        </span>
-                      );
-                    })()}
+                    <Badge color={actionColors[log.action] || colors.text}>
+                      {actionLabels[log.action] || log.action}
+                    </Badge>
                   </td>
                   <td style={tdStyle}>
                     <span style={cellIconStyle}>
@@ -519,9 +483,7 @@ export default function Security() {
                     </span>
                   </td>
                   <td style={tdStyle}>
-                    <span style={cellIconStyle}>
-                      <Globe size={13} /> {log.ip}
-                    </span>
+                    <Badge mono>{log.ip}</Badge>
                   </td>
                 </tr>
               ))}

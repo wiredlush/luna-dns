@@ -11,7 +11,9 @@ func (e *Engine) query(message *dns.Msg) {
 	for _, q := range message.Question {
 		switch q.Qtype {
 		case dns.TypeA:
+			e.hostMu.RLock()
 			ip, err := e.hostTree.Search(q.Name[:len(q.Name)-1])
+			e.hostMu.RUnlock()
 			if ip == "" || err != nil {
 				e.forward(message)
 				return

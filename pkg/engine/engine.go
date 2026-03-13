@@ -14,6 +14,7 @@ import (
 )
 
 type Engine struct {
+	hostMu          sync.RWMutex
 	hostTree        *tree.Tree
 	blocklistTree   *tree.Tree
 	blocklists      []string
@@ -144,6 +145,24 @@ func (e *Engine) SetForwarders(forwarders []config.DNS) {
 
 	e.dns = forwarders
 	e.forwardIndex = 0
+}
+
+func (e *Engine) SetHosts(hosts []config.Host) {
+	newTree := tree.NewTree()
+	for _, h := range hosts {
+		ent, err := entry.NewEntry(h.Host, h.IP)
+		if err != nil {
+			log.Printf("Invalid host entry %s -> %s: %v", h.Host, h.IP, err)
+			continue
+		}
+		newTree.Insert(ent)
+	}
+
+	e.hostMu.Lock()
+	e.hostTree = newTree
+	e.hostMu.Unlock()
+
+	log.Printf("DNS records updated: %d entries", len(hosts))
 }
 
 func (e *Engine) Stop() error {
