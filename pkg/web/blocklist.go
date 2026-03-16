@@ -4,6 +4,7 @@ package web
 
 import (
 	"bufio"
+	"log"
 	"strconv"
 	"strings"
 
@@ -54,7 +55,9 @@ func (s *Server) createBlocklistEntry(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid domain format"})
 	}
 
-	s.syncBlocklist()
+	if s.engine != nil && s.engine.Running() {
+		s.engine.AddBlocklistEntry(req.Domain)
+	}
 
 	return c.Status(fiber.StatusCreated).JSON(entry)
 }
@@ -65,7 +68,8 @@ func (s *Server) deleteBlocklistEntry(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid id"})
 	}
 
-	if _, err := s.db.GetBlocklistEntry(uint(id)); err != nil {
+	entry, err := s.db.GetBlocklistEntry(uint(id))
+	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Entry not found"})
 	}
 
@@ -73,7 +77,9 @@ func (s *Server) deleteBlocklistEntry(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete entry"})
 	}
 
-	s.syncBlocklist()
+	if s.engine != nil && s.engine.Running() {
+		s.engine.RemoveBlocklistEntry(entry.Domain)
+	}
 
 	return c.JSON(fiber.Map{"ok": true})
 }
@@ -83,7 +89,7 @@ func (s *Server) clearBlocklist(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to clear blocklist"})
 	}
 
-	s.syncBlocklist()
+	go s.syncBlocklist()
 
 	return c.JSON(fiber.Map{"ok": true})
 }
@@ -127,33 +133,29 @@ func (s *Server) uploadBlocklist(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to import entries"})
 	}
 
-	s.syncBlocklist()
+	go s.syncBlocklist()
 
 	return c.JSON(fiber.Map{"imported": count})
 }
 
 func (s *Server) syncBlocklist() {
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	eng := s.engine
+	s.mu.Unlock()
 
-	if s.engine == nil || !s.engine.Running() {
+	if eng == nil || !eng.Running() {
 		return
 	}
 
-	domains := s.loadBlocklistDomains()
-	s.engine.SetBlocklist(domains)
+	s.loadBlocklistIntoEngine()
 }
 
-func (s *Server) loadBlocklistDomains() []string {
-	entries, err := s.db.ListAllBlocklistDomains()
-	if err != nil {
+func (s *Server) loadBlocklistIntoEngine() {
+	log.Println("Loading blocklist entries from database...")
+	builder := s.engine.NewBlocklistBuilder()
+	s.db.IterateBlocklistDomains(1000, func(domains []string) error {
+		builder.Add(domains)
 		return nil
-	}
-
-	domains := make([]string, len(entries))
-	for i, e := range entries {
-		domains[i] = e.Domain
-	}
-
-	return domains
+	})
+	builder.Apply()
 }

@@ -4,6 +4,7 @@ package web
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/wiredlush/luna-dns/pkg/config"
@@ -109,6 +110,7 @@ func (s *Server) restartDns(c *fiber.Ctx) error {
 }
 
 func (s *Server) loadRecords() []config.Host {
+	log.Println("Loading DNS records from database...")
 	records, err := s.db.ListDnsRecords()
 	if err != nil {
 		return nil
@@ -119,10 +121,12 @@ func (s *Server) loadRecords() []config.Host {
 		hosts[i] = config.Host{Host: r.Host, IP: r.IP}
 	}
 
+	log.Printf("DNS records loaded: %d entries", len(hosts))
 	return hosts
 }
 
 func (s *Server) loadForwarders() []config.DNS {
+	log.Println("Loading DNS forwarders from database...")
 	forwarders, err := s.db.ListDnsForwarders()
 	if err != nil {
 		return nil
@@ -133,6 +137,7 @@ func (s *Server) loadForwarders() []config.DNS {
 		dnsServers[i] = config.DNS{Addr: f.DialAddr(), Network: f.Network}
 	}
 
+	log.Printf("DNS forwarders loaded: %d entries", len(dnsServers))
 	return dnsServers
 }
 
@@ -153,14 +158,12 @@ func (s *Server) startEngine() error {
 		return fmt.Errorf("Failed to create dns engine: %w", err)
 	}
 
-	if err := eng.StartBackground(); err != nil {
-		return fmt.Errorf("Failed to start dns engine: %w", err)
-	}
-
 	s.engine = eng
+	s.loadBlocklistIntoEngine()
 
-	if domains := s.loadBlocklistDomains(); len(domains) > 0 {
-		eng.SetBlocklist(domains)
+	if err := eng.StartBackground(); err != nil {
+		s.engine = nil
+		return fmt.Errorf("Failed to start dns engine: %w", err)
 	}
 
 	s.db.SetDnsAutoStart(true)

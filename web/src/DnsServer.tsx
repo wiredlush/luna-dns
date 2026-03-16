@@ -14,6 +14,7 @@ import {
   FileText,
   MapPin,
   Link,
+  Loader2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Badge from "./Badge";
@@ -352,8 +353,14 @@ export default function DnsServer() {
                   fontSize: "0.75rem",
                   fontFamily: "inherit",
                 }}>
-                {running ? <Square size={12} /> : <Play size={12} />}
-                {running ? "Stop" : "Start"}
+                {loading ? (
+                  <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+                ) : running ? (
+                  <Square size={12} />
+                ) : (
+                  <Play size={12} />
+                )}
+                {loading ? (running ? "Stopping..." : "Starting...") : running ? "Stop" : "Start"}
               </button>
             </div>
           )}

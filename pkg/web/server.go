@@ -95,12 +95,12 @@ func (s *Server) Start() error {
 		eng, err := engine.NewEngine(cfg)
 		if err != nil {
 			log.Printf("Failed to create DNS engine: %v", err)
-		} else if err := eng.StartBackground(); err != nil {
-			log.Printf("Failed to start DNS engine: %v", err)
 		} else {
 			s.engine = eng
-			if domains := s.loadBlocklistDomains(); len(domains) > 0 {
-				eng.SetBlocklist(domains)
+			s.loadBlocklistIntoEngine()
+			if err := eng.StartBackground(); err != nil {
+				log.Printf("Failed to start DNS engine: %v", err)
+				s.engine = nil
 			}
 		}
 	}

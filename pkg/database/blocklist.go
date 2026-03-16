@@ -25,6 +25,7 @@ func (d *Database) SearchBlocklistEntries(search string, limit, offset int) ([]B
 	if err := q.Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
+
 	if err := q.Order("domain asc").Limit(limit).Offset(offset).Find(&entries).Error; err != nil {
 		return nil, 0, err
 	}
@@ -32,12 +33,24 @@ func (d *Database) SearchBlocklistEntries(search string, limit, offset int) ([]B
 	return entries, count, nil
 }
 
-func (d *Database) ListAllBlocklistDomains() ([]BlocklistEntry, error) {
-	var entries []BlocklistEntry
-	if err := d.db.Find(&entries).Error; err != nil {
-		return nil, err
+func (d *Database) IterateBlocklistDomains(batchSize int, fn func(domains []string) error) error {
+	var offset int
+	for {
+		var domains []string
+		if err := d.db.Model(&BlocklistEntry{}).Offset(offset).Limit(batchSize).Pluck("domain", &domains).Error; err != nil {
+			return err
+		}
+
+		if len(domains) == 0 {
+			return nil
+		}
+
+		if err := fn(domains); err != nil {
+			return err
+		}
+
+		offset += len(domains)
 	}
-	return entries, nil
 }
 
 func (d *Database) CreateBlocklistEntry(domain string) (*BlocklistEntry, error) {

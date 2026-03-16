@@ -159,6 +159,25 @@ func (e *Engine) SetHosts(hosts []config.Host) {
 	log.Printf("DNS records updated: %d entries", len(hosts))
 }
 
+func (e *Engine) AddHostEntry(host, ip string) {
+	ent, err := entry.NewEntry(host, ip)
+	if err != nil {
+		return
+	}
+
+	e.hostMu.Lock()
+	e.hostTree.Insert(ent)
+	e.hostMu.Unlock()
+	log.Printf("DNS record inserted: %s -> %s", host, ip)
+}
+
+func (e *Engine) RemoveHostEntry(host string) {
+	e.hostMu.Lock()
+	e.hostTree.Delete(host)
+	e.hostMu.Unlock()
+	log.Printf("DNS record removed: %s", host)
+}
+
 func (e *Engine) SetBlocklist(domains []string) {
 	newTree := tree.NewTree()
 	for _, d := range domains {
@@ -174,6 +193,53 @@ func (e *Engine) SetBlocklist(domains []string) {
 	e.blocklistMu.Unlock()
 
 	log.Printf("Blocklist updated: %d entries", len(domains))
+}
+
+func (e *Engine) AddBlocklistEntry(domain string) {
+	ent, err := entry.NewEntry(domain, "0.0.0.0")
+	if err != nil {
+		return
+	}
+	e.blocklistMu.Lock()
+	e.blocklistTree.Insert(ent)
+	e.blocklistMu.Unlock()
+	log.Printf("Blocklist entry inserted: %s", domain)
+}
+
+func (e *Engine) RemoveBlocklistEntry(domain string) {
+	e.blocklistMu.Lock()
+	e.blocklistTree.Delete(domain)
+	e.blocklistMu.Unlock()
+	log.Printf("Blocklist entry removed: %s", domain)
+}
+
+func (e *Engine) NewBlocklistBuilder() *BlocklistBuilder {
+	return &BlocklistBuilder{engine: e, tree: tree.NewTree()}
+}
+
+type BlocklistBuilder struct {
+	engine *Engine
+	tree   *tree.Tree
+	count  int
+}
+
+func (b *BlocklistBuilder) Add(domains []string) {
+	for _, d := range domains {
+		ent, err := entry.NewEntry(d, "0.0.0.0")
+		if err != nil {
+			continue
+		}
+		b.tree.Insert(ent)
+		b.count++
+	}
+}
+
+func (b *BlocklistBuilder) Apply() {
+	b.engine.blocklistMu.Lock()
+	b.engine.blocklistTree = b.tree
+	b.engine.blocklistMu.Unlock()
+
+	log.Printf("Blocklist updated: %d entries", b.count)
 }
 
 func (e *Engine) Stop() error {
