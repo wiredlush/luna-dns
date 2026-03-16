@@ -200,7 +200,11 @@ export default function DnsServer() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ addr: fwAddr, port: fwPort, network: fwNetwork }),
+        body: JSON.stringify({
+          addr: fwAddr,
+          port: fwPort,
+          network: fwNetwork,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -315,7 +319,8 @@ export default function DnsServer() {
             DNS Server
           </h2>
           {hasConfig && (
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div
+              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span
                 style={{
                   display: "inline-block",
@@ -323,7 +328,9 @@ export default function DnsServer() {
                   height: 10,
                   borderRadius: "50%",
                   background: running ? "#16a34a" : "#dc2626",
-                  animation: running ? "pulse-dot 1.5s ease-in-out infinite" : "none",
+                  animation: running
+                    ? "pulse-dot 1.5s ease-in-out infinite"
+                    : "none",
                 }}
               />
               <button
@@ -366,9 +373,7 @@ export default function DnsServer() {
               fontSize: "0.8rem",
               color: "#92400e",
             }}>
-            <span>
-              Configuration changed. Restart the DNS server to apply.
-            </span>
+            <span>Configuration changed. Restart the DNS server to apply.</span>
             <button
               onClick={handleRestart}
               disabled={loading}
@@ -443,7 +448,13 @@ export default function DnsServer() {
             />
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.75rem", paddingTop: "0.75rem" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginTop: "0.75rem",
+              paddingTop: "0.75rem",
+            }}>
             <button
               onClick={handleSave}
               disabled={loading || !addr || !port}
@@ -500,9 +511,21 @@ export default function DnsServer() {
                   borderBottom: `1px solid ${colors.border}`,
                   textAlign: "left",
                 }}>
-                <th style={thStyle}><span style={thInnerStyle}><Globe size={12} /> Address</span></th>
-                <th style={thStyle}><span style={thInnerStyle}><Cable size={12} /> Port</span></th>
-                <th style={thStyle}><span style={thInnerStyle}><Network size={12} /> Protocol</span></th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <Globe size={12} /> Address
+                  </span>
+                </th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <Cable size={12} /> Port
+                  </span>
+                </th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <Network size={12} /> Protocol
+                  </span>
+                </th>
                 <th style={{ ...thStyle, width: "1%" }}></th>
               </tr>
             </thead>
@@ -511,9 +534,17 @@ export default function DnsServer() {
                 <tr
                   key={f.id}
                   style={{ borderBottom: `1px solid ${colors.border}` }}>
-                  <td style={tdStyle}><Badge mono>{f.addr}</Badge></td>
-                  <td style={tdStyle}><Badge mono>{f.port}</Badge></td>
-                  <td style={tdStyle}><Badge color={f.network === "tcp" ? "#3b82f6" : "#8b5cf6"}>{f.network.toUpperCase()}</Badge></td>
+                  <td style={tdStyle}>
+                    <Badge mono>{f.addr}</Badge>
+                  </td>
+                  <td style={tdStyle}>
+                    <Badge mono>{f.port}</Badge>
+                  </td>
+                  <td style={tdStyle}>
+                    <Badge color={f.network === "tcp" ? "#3b82f6" : "#8b5cf6"}>
+                      {f.network.toUpperCase()}
+                    </Badge>
+                  </td>
                   <td style={tdStyle}>
                     <button
                       onClick={() => handleDeleteForwarder(f.id)}
@@ -548,7 +579,13 @@ export default function DnsServer() {
           </table>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.75rem", paddingTop: "0.75rem" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginTop: "0.75rem",
+            paddingTop: "0.75rem",
+          }}>
           <button
             onClick={() => setShowFwForm(true)}
             style={{
@@ -629,7 +666,12 @@ export default function DnsServer() {
                 <X size={18} />
               </button>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+              }}>
               <div>
                 <label style={labelStyle}>Address</label>
                 <input
@@ -723,8 +765,16 @@ export default function DnsServer() {
                   borderBottom: `1px solid ${colors.border}`,
                   textAlign: "left",
                 }}>
-                <th style={thStyle}><span style={thInnerStyle}><Link size={12} /> Host</span></th>
-                <th style={thStyle}><span style={thInnerStyle}><MapPin size={12} /> IP</span></th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <Link size={12} /> Host
+                  </span>
+                </th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <MapPin size={12} /> IP
+                  </span>
+                </th>
                 <th style={{ ...thStyle, width: "1%" }}></th>
               </tr>
             </thead>
@@ -899,8 +949,7 @@ export default function DnsServer() {
                   alignItems: "center",
                   gap: "0.3rem",
                   padding: "0.6rem 1.2rem",
-                  background:
-                    recHost && recIP ? colors.primary : colors.border,
+                  background: recHost && recIP ? colors.primary : colors.border,
                   color: recHost && recIP ? "#fff" : "#9ca3af",
                   border: "none",
                   borderRadius: "6px",

@@ -49,9 +49,11 @@ func (d *Database) seedDefaultDnsForwarders() error {
 	if count > 0 {
 		return nil
 	}
+
 	defaults := []DnsForwarder{
 		{Addr: "8.8.8.8", Port: 53, Network: "udp"},
 		{Addr: "8.8.4.4", Port: 53, Network: "udp"},
 	}
+
 	return d.db.Create(&defaults).Error
 }

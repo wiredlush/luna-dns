@@ -113,10 +113,12 @@ func (s *Server) loadRecords() []config.Host {
 	if err != nil {
 		return nil
 	}
+
 	hosts := make([]config.Host, len(records))
 	for i, r := range records {
 		hosts[i] = config.Host{Host: r.Host, IP: r.IP}
 	}
+
 	return hosts
 }
 
@@ -125,10 +127,12 @@ func (s *Server) loadForwarders() []config.DNS {
 	if err != nil {
 		return nil
 	}
+
 	dnsServers := make([]config.DNS, len(forwarders))
 	for i, f := range forwarders {
 		dnsServers[i] = config.DNS{Addr: f.DialAddr(), Network: f.Network}
 	}
+
 	return dnsServers
 }
 
@@ -154,6 +158,11 @@ func (s *Server) startEngine() error {
 	}
 
 	s.engine = eng
+
+	if domains := s.loadBlocklistDomains(); len(domains) > 0 {
+		eng.SetBlocklist(domains)
+	}
+
 	s.db.SetDnsAutoStart(true)
 	return nil
 }
@@ -172,5 +181,6 @@ func (s *Server) stopDns(c *fiber.Ctx) error {
 
 	s.engine = nil
 	s.db.SetDnsAutoStart(false)
+
 	return c.JSON(fiber.Map{"ok": true, "running": false})
 }

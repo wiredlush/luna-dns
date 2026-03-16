@@ -12,7 +12,9 @@ import (
 
 func (e *Engine) forward(message *dns.Msg) {
 	for _, q := range message.Question {
+		e.blocklistMu.RLock()
 		ip, err := e.blocklistTree.Search(q.Name[:len(q.Name)-1])
+		e.blocklistMu.RUnlock()
 		if ip == "" || err != nil {
 			continue
 		}

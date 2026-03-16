@@ -3,5 +3,5 @@
 package web
 
 func init() {
-	StartFunc = startFromFlags
+	StartFunc = startWeb
 }

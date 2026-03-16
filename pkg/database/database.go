@@ -23,7 +23,15 @@ func Open(path string) (*Database, error) {
 
 	d := &Database{db: db}
 
-	if err := db.AutoMigrate(&User{}, &AuditLog{}, &DnsConfig{}, &DnsForwarder{}, &DnsRecord{}); err != nil {
+	err = db.AutoMigrate(
+		&User{},
+		&AuditLog{},
+		&DnsConfig{},
+		&DnsForwarder{},
+		&DnsRecord{},
+		&BlocklistEntry{},
+	)
+	if err != nil {
 		return nil, err
 	}
 

@@ -44,7 +44,12 @@ func (s *sessionStore) create(username, ip string, ttl time.Duration) (string, e
 
 	now := time.Now()
 	s.mu.Lock()
-	s.sessions[id] = session{username: username, ip: ip, createdAt: now, expires: now.Add(ttl)}
+	s.sessions[id] = session{
+		username:  username,
+		ip:        ip,
+		createdAt: now,
+		expires:   now.Add(ttl),
+	}
 	s.mu.Unlock()
 
 	return id, nil
@@ -73,6 +78,7 @@ func (s *sessionStore) username(id string) string {
 	if !ok {
 		return ""
 	}
+
 	return sess.username
 }
 
@@ -93,6 +99,7 @@ func (s *sessionStore) list(currentSID string) []sessionInfo {
 			delete(s.sessions, id)
 			continue
 		}
+
 		result = append(result, sessionInfo{
 			Username:  sess.username,
 			IP:        sess.ip,
@@ -101,6 +108,7 @@ func (s *sessionStore) list(currentSID string) []sessionInfo {
 			Current:   id == currentSID,
 		})
 	}
+
 	return result
 }
 
@@ -198,5 +206,6 @@ func (s *Server) authMiddleware(c *fiber.Ctx) error {
 	if sid == "" || !s.sessions.valid(sid) {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
+
 	return c.Next()
 }

@@ -1,6 +1,12 @@
 import { colors } from "./theme";
 
-export default function Avatar({ name, size = 28 }: { name: string; size?: number }) {
+export default function Avatar({
+  name,
+  size = 28,
+}: {
+  name: string;
+  size?: number;
+}) {
   return (
     <span
       style={{

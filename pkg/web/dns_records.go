@@ -30,6 +30,7 @@ func (s *Server) listRecords(c *fiber.Ctx) error {
 	for i, r := range records {
 		res[i] = recordResponse{ID: r.ID, Host: r.Host, IP: r.IP}
 	}
+
 	return c.JSON(res)
 }
 
@@ -94,5 +95,6 @@ func (s *Server) syncRecords() {
 	for i, r := range records {
 		hosts[i] = config.Host{Host: r.Host, IP: r.IP}
 	}
+
 	s.engine.SetHosts(hosts)
 }

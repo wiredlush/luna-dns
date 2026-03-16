@@ -25,9 +25,9 @@ func (d *Database) LogAudit(username, action, detail, ip string) {
 	d.db.Where("timestamp < ?", time.Now().Add(-auditRetention)).Delete(&AuditLog{})
 }
 
-func (d *Database) ListAuditLogs(limit int) ([]AuditLog, error) {
+func (d *Database) ListAuditLogs() ([]AuditLog, error) {
 	var logs []AuditLog
-	if err := d.db.Order("timestamp desc").Limit(limit).Find(&logs).Error; err != nil {
+	if err := d.db.Order("timestamp desc").Find(&logs).Error; err != nil {
 		return nil, err
 	}
 	return logs, nil

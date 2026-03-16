@@ -25,6 +25,7 @@ func (s *Server) listUsers(c *fiber.Ctx) error {
 	for i, u := range users {
 		res[i] = userResponse{ID: u.ID, Username: u.Username, CreatedAt: u.CreatedAt}
 	}
+
 	return c.JSON(res)
 }
 

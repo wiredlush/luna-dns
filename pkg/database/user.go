@@ -23,6 +23,7 @@ func (u *User) SetPassword(plain string) error {
 	if err != nil {
 		return err
 	}
+
 	u.Password = string(hash)
 	return nil
 }
@@ -33,9 +34,12 @@ func (u *User) CheckPassword(plain string) bool {
 
 func (d *Database) FindByUsername(username string) (*User, error) {
 	var user User
-	if err := d.db.Session(&gorm.Session{Logger: logger.Discard}).Where("username = ?", username).First(&user).Error; err != nil {
+	if err := d.db.Session(&gorm.Session{Logger: logger.Discard}).
+		Where("username = ?", username).
+		First(&user).Error; err != nil {
 		return nil, err
 	}
+
 	return &user, nil
 }
 
@@ -44,17 +48,20 @@ func (d *Database) ListUsers() ([]User, error) {
 	if err := d.db.Find(&users).Error; err != nil {
 		return nil, err
 	}
+
 	return users, nil
 }
 
 func (d *Database) CreateUser(username, password string) (*User, error) {
 	user := &User{Username: username}
+
 	if err := user.SetPassword(password); err != nil {
 		return nil, err
 	}
 	if err := d.db.Create(user).Error; err != nil {
 		return nil, err
 	}
+
 	return user, nil
 }
 
@@ -63,6 +70,7 @@ func (d *Database) FindByID(id uint) (*User, error) {
 	if err := d.db.First(&user, id).Error; err != nil {
 		return nil, err
 	}
+
 	return &user, nil
 }
 
@@ -81,9 +89,11 @@ func (d *Database) UpdatePassword(username, password string) error {
 	if err != nil {
 		return err
 	}
+
 	if err := user.SetPassword(password); err != nil {
 		return err
 	}
+
 	return d.db.Save(user).Error
 }
 
@@ -117,5 +127,6 @@ func generateRandomPassword(length int) (string, error) {
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}
+
 	return hex.EncodeToString(bytes)[:length], nil
 }

@@ -109,7 +109,7 @@ export default function Security() {
   }
 
   function fetchAuditLogs() {
-    fetch("/api/audit-logs?limit=50", { credentials: "same-origin" })
+    fetch("/api/audit-logs", { credentials: "same-origin" })
       .then((r) => r.json())
       .then((data) => {
         setAuditLogs(data || []);
@@ -351,7 +351,11 @@ export default function Security() {
                     <User size={12} /> User
                   </span>
                 </th>
-                <th style={thStyle}><span style={thInnerStyle}><Globe size={12} /> IP</span></th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <Globe size={12} /> IP
+                  </span>
+                </th>
                 <th style={thStyle}>
                   <span style={thInnerStyle}>
                     <Calendar size={12} /> Created
@@ -398,9 +402,7 @@ export default function Security() {
                     </span>
                   </td>
                   <td style={tdStyle}>
-                    {s.current && (
-                      <Badge color="#16a34a">Current</Badge>
-                    )}
+                    {s.current && <Badge color="#16a34a">Current</Badge>}
                   </td>
                 </tr>
               ))}
@@ -448,7 +450,11 @@ export default function Security() {
                     <FileText size={12} /> Detail
                   </span>
                 </th>
-                <th style={thStyle}><span style={thInnerStyle}><Globe size={12} /> IP</span></th>
+                <th style={thStyle}>
+                  <span style={thInnerStyle}>
+                    <Globe size={12} /> IP
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody>

@@ -60,7 +60,10 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
           type="text"
           placeholder="Username"
           value={username}
-          onChange={(e) => { setUsername(e.target.value); setError(""); }}
+          onChange={(e) => {
+            setUsername(e.target.value);
+            setError("");
+          }}
           required
           autoFocus
           style={inputStyle}
@@ -70,7 +73,10 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
           type="password"
           placeholder="Password"
           value={password}
-          onChange={(e) => { setPassword(e.target.value); setError(""); }}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setError("");
+          }}
           required
           style={inputStyle}
         />
@@ -82,7 +88,9 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
             opacity: error ? 1 : 0,
             overflow: "hidden",
             background: "rgba(239, 65, 54, 0.08)",
-            border: error ? `1px solid ${colors.primary}` : "1px solid transparent",
+            border: error
+              ? `1px solid ${colors.primary}`
+              : "1px solid transparent",
             borderRadius: "8px",
             color: colors.primary,
             fontSize: "0.875rem",

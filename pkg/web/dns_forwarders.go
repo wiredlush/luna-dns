@@ -82,7 +82,6 @@ func (s *Server) deleteForwarder(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"ok": true})
 }
 
-// syncForwarders loads forwarders from DB and pushes them to the running engine.
 func (s *Server) syncForwarders() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -100,5 +99,6 @@ func (s *Server) syncForwarders() {
 	for i, f := range forwarders {
 		dnsServers[i] = config.DNS{Addr: f.DialAddr(), Network: f.Network}
 	}
+
 	s.engine.SetForwarders(dnsServers)
 }

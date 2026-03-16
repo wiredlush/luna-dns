@@ -29,6 +29,7 @@ func (d *Database) GetDnsConfig() (*DnsConfig, error) {
 	if result.Error != nil {
 		return nil, result.Error
 	}
+
 	return &cfg, nil
 }
 
@@ -38,10 +39,11 @@ func (d *Database) seedDefaultDnsConfig() error {
 	if count > 0 {
 		return nil
 	}
+
 	return d.db.Create(&DnsConfig{
 		ID:       1,
 		Addr:     "0.0.0.0",
-		Port:     5355,
+		Port:     53,
 		Network:  "udp",
 		CacheTTL: 14400,
 	}).Error
@@ -59,6 +61,7 @@ func (d *Database) SaveDnsConfig(addr string, port int, network string, cacheTTL
 		Network:  network,
 		CacheTTL: cacheTTL,
 	}
+
 	result := d.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"addr", "port", "network", "cache_ttl"}),
@@ -66,5 +69,6 @@ func (d *Database) SaveDnsConfig(addr string, port int, network string, cacheTTL
 	if result.Error != nil {
 		return nil, result.Error
 	}
+
 	return &cfg, nil
 }

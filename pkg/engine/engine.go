@@ -14,18 +14,18 @@ import (
 )
 
 type Engine struct {
-	hostMu          sync.RWMutex
-	hostTree        *tree.Tree
-	blocklistTree   *tree.Tree
-	blocklists      []string
-	blocklistUpdate int64
-	cache           *cache.Cache
-	addr            string
-	network         string
-	dnsMu           sync.RWMutex
-	dns             []config.DNS
-	forwardIndex    int
-	server          *dns.Server
+	hostMu        sync.RWMutex
+	hostTree      *tree.Tree
+	blocklistMu   sync.RWMutex
+	blocklistTree *tree.Tree
+	blocklists    []string
+	cache         *cache.Cache
+	addr          string
+	network       string
+	dnsMu         sync.RWMutex
+	dns           []config.DNS
+	forwardIndex  int
+	server        *dns.Server
 }
 
 func NewEngine(config *config.Config) (*Engine, error) {
@@ -38,26 +38,20 @@ func NewEngine(config *config.Config) (*Engine, error) {
 		hosts.Insert(entry)
 	}
 
-	blockListUpdate := config.BlocklistUpdate
-	if blockListUpdate == 0 {
-		blockListUpdate = 720
-	}
-
 	cacheTTL := config.CacheTTL
 	if cacheTTL == 0 {
 		cacheTTL = 14400
 	}
 
 	return &Engine{
-		hostTree:        hosts,
-		blocklistTree:   tree.NewTree(),
-		blocklists:      config.Blocklists,
-		blocklistUpdate: blockListUpdate,
-		cache:           cache.NewCache(time.Duration(cacheTTL) * time.Second),
-		addr:            config.Addr,
-		network:         config.Network,
-		dns:             config.DNS,
-		forwardIndex:    0,
+		hostTree:      hosts,
+		blocklistTree: tree.NewTree(),
+		blocklists:    config.Blocklists,
+		cache:         cache.NewCache(time.Duration(cacheTTL) * time.Second),
+		addr:          config.Addr,
+		network:       config.Network,
+		dns:           config.DNS,
+		forwardIndex:  0,
 	}, nil
 }
 
@@ -71,7 +65,7 @@ func (e *Engine) Start() error {
 	}
 
 	e.cache.Reset()
-	go e.BlocklistsRoutine()
+	e.loadBlocklists()
 	go e.cache.CacheRoutine()
 
 	log.Printf("Listening on %s (%s)\n", e.addr, e.network)
@@ -87,7 +81,7 @@ func (e *Engine) StartBackground() error {
 	}
 
 	e.cache.Reset()
-	go e.BlocklistsRoutine()
+	e.loadBlocklists()
 	go e.cache.CacheRoutine()
 
 	dns.HandleFunc(".", e.handler)
@@ -165,12 +159,31 @@ func (e *Engine) SetHosts(hosts []config.Host) {
 	log.Printf("DNS records updated: %d entries", len(hosts))
 }
 
+func (e *Engine) SetBlocklist(domains []string) {
+	newTree := tree.NewTree()
+	for _, d := range domains {
+		ent, err := entry.NewEntry(d, "0.0.0.0")
+		if err != nil {
+			continue
+		}
+		newTree.Insert(ent)
+	}
+
+	e.blocklistMu.Lock()
+	e.blocklistTree = newTree
+	e.blocklistMu.Unlock()
+
+	log.Printf("Blocklist updated: %d entries", len(domains))
+}
+
 func (e *Engine) Stop() error {
 	if e.server == nil {
 		return fmt.Errorf("engine is not running")
 	}
+
 	e.cache.Stop()
 	err := e.server.Shutdown()
 	e.server = nil
+
 	return err
 }

@@ -15,7 +15,4 @@ hosts:
   - host: "*.test.com"
     ip: 127.0.0.1
 #blocklists:
-#  - http://test.test/test.txt
-#  - file://folder/test.txt
-#  - file:///root/test.txt
-#blocklists_update: 720
+#  - /path/to/blocklist.txt

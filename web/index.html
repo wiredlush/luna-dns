@@ -6,13 +6,56 @@
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <title>Luna DNS</title>
     <style>
-      html, body, #root { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 16px; background: #fff; }
-      input, button { font-family: inherit; }
-      input:focus { outline: none; border-color: rgb(239, 65, 54) !important; background: #fff !important; }
-      a:focus-visible, button:focus-visible { outline: 2px solid rgb(239, 65, 54); outline-offset: 2px; border-radius: 4px; }
-      button:hover { opacity: 0.85; }
-      a:hover { opacity: 0.85; }
-      @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+      html,
+      body,
+      #root {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        font-size: 16px;
+        background: #fff;
+      }
+      input,
+      button {
+        font-family: inherit;
+      }
+      input:focus {
+        outline: none;
+        border-color: rgb(239, 65, 54) !important;
+        background: #fff !important;
+      }
+      a:focus-visible,
+      button:focus-visible {
+        outline: 2px solid rgb(239, 65, 54);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+      button:hover {
+        opacity: 0.85;
+      }
+      a:hover {
+        opacity: 0.85;
+      }
+      @keyframes pulse-dot {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
     </style>
   </head>
   <body>

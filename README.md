@@ -86,18 +86,9 @@ hosts:
   - host: "*.test.com" # wildcard pattern example
     ip: 127.0.0.1
 
-# luna-dns supports blocklists both from local files or remote URI
-# Blocklists must contain only one domain name per line.
+# luna-dns supports blocklists from local files.
+# Supported formats: plain domain, AdBlock Plus (||domain^) and hosts file (0.0.0.0 domain).
 # Every blocked record resolves to 0.0.0.0
-# ex.
-# google.com
-# test.com
-# ...
 blocklists:
-  - http://test.test/test.txt
-  - file://folder/test.txt
-  - file:///root/test.txt
-
-# blocklists update time (in minute)
-blocklists_update: 720 # 12 hours (default)
+  - /path/to/blocklist.txt
 ```

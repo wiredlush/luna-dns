@@ -42,7 +42,7 @@ func defaultDBPath() string {
 	return filepath.Join(filepath.Dir(exe), "luna-dns.db")
 }
 
-func startFromFlags(args []string) error {
+func startWeb(args []string) error {
 	fs := flag.NewFlagSet("luna-dns-web", flag.ExitOnError)
 
 	server := &Server{}
@@ -99,11 +99,15 @@ func (s *Server) Start() error {
 			log.Printf("Failed to start DNS engine: %v", err)
 		} else {
 			s.engine = eng
+			if domains := s.loadBlocklistDomains(); len(domains) > 0 {
+				eng.SetBlocklist(domains)
+			}
 		}
 	}
 
 	s.app = fiber.New(fiber.Config{
 		DisableStartupMessage: true,
+		BodyLimit:             16 << 20, // 16MB
 	})
 
 	s.app.Use(logger.New())
@@ -112,30 +116,31 @@ func (s *Server) Start() error {
 	s.app.Post("/api/logout", s.handleLogout)
 
 	s.app.Use("/api", s.authMiddleware)
-	s.app.Get("/api/status", s.handleStatus)
 
+	s.app.Get("/api/status", s.handleStatus)
 	s.app.Get("/api/users", s.listUsers)
 	s.app.Post("/api/users", s.createUser)
 	s.app.Delete("/api/users/:id", s.deleteUser)
 	s.app.Post("/api/change-password", s.changePassword)
-
 	s.app.Get("/api/sessions", s.listSessions)
 	s.app.Post("/api/sessions/logout-all", s.logoutAll)
 	s.app.Get("/api/audit-logs", s.listAuditLogs)
-
 	s.app.Get("/api/dns/config", s.getDnsConfig)
 	s.app.Post("/api/dns/config", s.saveDnsConfig)
 	s.app.Post("/api/dns/start", s.startDns)
 	s.app.Post("/api/dns/stop", s.stopDns)
 	s.app.Post("/api/dns/restart", s.restartDns)
-
 	s.app.Get("/api/dns/forwarders", s.listForwarders)
 	s.app.Post("/api/dns/forwarders", s.createForwarder)
 	s.app.Delete("/api/dns/forwarders/:id", s.deleteForwarder)
-
 	s.app.Get("/api/dns/records", s.listRecords)
 	s.app.Post("/api/dns/records", s.createRecord)
 	s.app.Delete("/api/dns/records/:id", s.deleteRecord)
+	s.app.Get("/api/blocklist", s.listBlocklist)
+	s.app.Post("/api/blocklist", s.createBlocklistEntry)
+	s.app.Delete("/api/blocklist/:id", s.deleteBlocklistEntry)
+	s.app.Delete("/api/blocklist", s.clearBlocklist)
+	s.app.Post("/api/blocklist/upload", s.uploadBlocklist)
 
 	s.app.Use("/", filesystem.New(filesystem.Config{
 		Root:       http.FS(staticFS),
@@ -148,6 +153,7 @@ func (s *Server) Start() error {
 		if err != nil {
 			return c.SendStatus(fiber.StatusNotFound)
 		}
+
 		c.Set("Content-Type", "text/html")
 		return c.Send(data)
 	})
