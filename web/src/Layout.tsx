@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Server, ShieldBan, ShieldCheck, Users, LogOut, Cpu, MemoryStick } from "lucide-react";
+import { LayoutDashboard, Server, ShieldBan, ShieldCheck, Users, LogOut } from "lucide-react";
 import { colors } from "./theme";
 
 const navItems = [
@@ -13,8 +13,6 @@ const navItems = [
 
 interface StatusData {
   dns: { running: boolean };
-  cpu: { used_percent: number };
-  memory: { used_percent: number };
 }
 
 export default function Layout({ onLogout }: { onLogout: () => void }) {
@@ -99,19 +97,18 @@ export default function Layout({ onLogout }: { onLogout: () => void }) {
           ))}
         </nav>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", marginRight: "1rem", fontSize: "0.6rem", fontWeight: 500, lineHeight: 1.3, background: "transparent", border: `1px solid ${colors.border}`, borderRadius: "6px", padding: "0.3rem 0.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.2rem", color: colors.navText }}>
-            <Cpu size={9} />
-            {status ? `${status.cpu.used_percent}%` : "—"}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.2rem", color: colors.navText }}>
-            <MemoryStick size={9} />
-            {status ? `${status.memory.used_percent}%` : "—"}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.2rem", color: dnsOnline ? "#16a34a" : "#dc2626" }}>
-            <Server size={9} />
-            {dnsOnline ? "Online" : "Offline"}
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginRight: "1rem", fontSize: "0.7rem", fontWeight: 600, color: dnsOnline ? "#16a34a" : "#dc2626", background: "transparent", border: `1px solid ${colors.border}`, borderRadius: "6px", padding: "0.4rem 0.6rem" }}>
+          <span
+            style={{
+              display: "inline-block",
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: dnsOnline ? "#16a34a" : "#dc2626",
+              animation: dnsOnline ? "pulse-dot 1.5s ease-in-out infinite" : "none",
+            }}
+          />
+          DNS {dnsOnline ? "Online" : "Offline"}
         </div>
 
         <button
