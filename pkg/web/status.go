@@ -22,7 +22,6 @@ func (s *Server) handleStatus(c *fiber.Ctx) error {
 }
 
 func (s *Server) probeDNS() dnsStatus {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return dnsStatus{Running: s.engine != nil && s.engine.Running()}
+	eng := s.getEngine()
+	return dnsStatus{Running: eng != nil && eng.Running()}
 }

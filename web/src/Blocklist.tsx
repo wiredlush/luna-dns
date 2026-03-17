@@ -28,7 +28,7 @@ export default function Blocklist() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
-
+  const [loaded, setLoaded] = useState(false);
   const [domain, setDomain] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [showUploadForm, setShowUploadForm] = useState(false);
@@ -49,6 +49,7 @@ export default function Blocklist() {
       .then((data) => {
         setEntries(data.entries || []);
         setTotal(data.total || 0);
+        setLoaded(true);
       })
       .catch(() => {});
   }
@@ -164,6 +165,10 @@ export default function Blocklist() {
 
   const totalPages = Math.ceil(total / perPage);
 
+  if (!loaded) {
+    return <div style={{ padding: "2rem" }} />;
+  }
+
   return (
     <div
       style={{
@@ -182,7 +187,6 @@ export default function Blocklist() {
         />
       )}
 
-      {/* Add Entry Modal */}
       {showAddForm && (
         <div
           onClick={() => setShowAddForm(false)}
@@ -292,7 +296,6 @@ export default function Blocklist() {
         </div>
       )}
 
-      {/* Upload Modal */}
       {showUploadForm && (
         <div
           onClick={() => setShowUploadForm(false)}
@@ -410,7 +413,6 @@ export default function Blocklist() {
         </div>
       )}
 
-      {/* Blocklist Card */}
       <div style={cardStyle}>
         <h2 style={cardTitleStyle}>
           <ShieldBan size={18} />

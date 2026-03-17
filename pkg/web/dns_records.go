@@ -51,8 +51,8 @@ func (s *Server) createRecord(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create record"})
 	}
 
-	if s.engine != nil && s.engine.Running() {
-		s.engine.AddHostEntry(req.Host, req.IP)
+	if eng := s.getEngine(); eng != nil && eng.Running() {
+		eng.AddHostEntry(req.Host, req.IP)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(recordResponse{
@@ -75,8 +75,8 @@ func (s *Server) deleteRecord(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete record"})
 	}
 
-	if s.engine != nil && s.engine.Running() {
-		s.engine.RemoveHostEntry(record.Host)
+	if eng := s.getEngine(); eng != nil && eng.Running() {
+		eng.RemoveHostEntry(record.Host)
 	}
 
 	return c.JSON(fiber.Map{"ok": true})

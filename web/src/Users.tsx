@@ -30,6 +30,7 @@ export default function Users() {
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -38,6 +39,7 @@ export default function Users() {
   async function fetchUsers() {
     const res = await fetch("/api/users", { credentials: "same-origin" });
     if (res.ok) setUsers(await res.json());
+    setLoaded(true);
   }
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
@@ -82,6 +84,10 @@ export default function Users() {
     toast.success("User deleted successfully");
     setDeleteTarget(null);
     fetchUsers();
+  }
+
+  if (!loaded) {
+    return <div style={{ padding: "2rem" }} />;
   }
 
   return (

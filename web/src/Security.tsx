@@ -94,6 +94,7 @@ export default function Security() {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditEntry[]>([]);
   const [auditPage, setAuditPage] = useState(0);
+  const [loaded, setLoaded] = useState(false);
   const auditPerPage = 10;
 
   useEffect(() => {
@@ -104,8 +105,11 @@ export default function Security() {
   function fetchSessions() {
     fetch("/api/sessions", { credentials: "same-origin" })
       .then((r) => r.json())
-      .then((data) => setSessions(data || []))
-      .catch(() => {});
+      .then((data) => {
+        setSessions(data || []);
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
   }
 
   function fetchAuditLogs() {
@@ -173,6 +177,10 @@ export default function Security() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (!loaded) {
+    return <div style={{ padding: "2rem" }} />;
   }
 
   return (

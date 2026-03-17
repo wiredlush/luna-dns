@@ -32,9 +32,8 @@ func (s *Server) getDnsConfig(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "No dns configuration found"})
 	}
 
-	s.mu.Lock()
-	running := s.engine != nil && s.engine.Running()
-	s.mu.Unlock()
+	eng := s.getEngine()
+	running := eng != nil && eng.Running()
 
 	return c.JSON(dnsConfigResponse{
 		Addr:     cfg.Addr,
@@ -71,9 +70,8 @@ func (s *Server) saveDnsConfig(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save configuration"})
 	}
 
-	s.mu.Lock()
-	running := s.engine != nil && s.engine.Running()
-	s.mu.Unlock()
+	eng := s.getEngine()
+	running := eng != nil && eng.Running()
 
 	return c.JSON(dnsConfigResponse{Addr: req.Addr, Port: req.Port, Network: req.Network, CacheTTL: req.CacheTTL, Running: running})
 }
@@ -159,7 +157,7 @@ func (s *Server) startEngine() error {
 	}
 
 	s.engine = eng
-	s.loadBlocklistIntoEngine()
+	s.loadBlocklistIntoEngine(eng)
 
 	if err := eng.StartBackground(); err != nil {
 		s.engine = nil

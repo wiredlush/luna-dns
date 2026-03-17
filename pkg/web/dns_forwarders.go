@@ -83,10 +83,8 @@ func (s *Server) deleteForwarder(c *fiber.Ctx) error {
 }
 
 func (s *Server) syncForwarders() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.engine == nil || !s.engine.Running() {
+	eng := s.getEngine()
+	if eng == nil || !eng.Running() {
 		return
 	}
 
@@ -100,5 +98,5 @@ func (s *Server) syncForwarders() {
 		dnsServers[i] = config.DNS{Addr: f.DialAddr(), Network: f.Network}
 	}
 
-	s.engine.SetForwarders(dnsServers)
+	eng.SetForwarders(dnsServers)
 }

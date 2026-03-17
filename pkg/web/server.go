@@ -31,7 +31,13 @@ type Server struct {
 	app      *fiber.App
 	sessions *sessionStore
 	engine   *engine.Engine
-	mu       sync.Mutex
+	mu       sync.RWMutex
+}
+
+func (s *Server) getEngine() *engine.Engine {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.engine
 }
 
 func defaultDBPath() string {
@@ -97,7 +103,7 @@ func (s *Server) Start() error {
 			log.Printf("Failed to create DNS engine: %v", err)
 		} else {
 			s.engine = eng
-			s.loadBlocklistIntoEngine()
+			s.loadBlocklistIntoEngine(eng)
 			if err := eng.StartBackground(); err != nil {
 				log.Printf("Failed to start DNS engine: %v", err)
 				s.engine = nil

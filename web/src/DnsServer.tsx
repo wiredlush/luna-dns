@@ -15,6 +15,7 @@ import {
   MapPin,
   Link,
   Loader2,
+  CircleArrowUp,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Badge from "./Badge";
@@ -61,6 +62,7 @@ export default function DnsServer() {
   const [recHost, setRecHost] = useState("");
   const [recIP, setRecIP] = useState("");
   const [showRecForm, setShowRecForm] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   const savedConfig = useRef<{
     addr: string;
@@ -99,8 +101,9 @@ export default function DnsServer() {
             cache_ttl: data.cache_ttl,
           };
         }
+        setLoaded(true);
       })
-      .catch(() => {});
+      .catch(() => setLoaded(true));
   }
 
   function fetchForwarders() {
@@ -288,6 +291,10 @@ export default function DnsServer() {
     }
   }
 
+  if (!loaded) {
+    return <div style={{ padding: "2rem" }} />;
+  }
+
   return (
     <div
       style={{
@@ -296,7 +303,6 @@ export default function DnsServer() {
         flexDirection: "column",
         gap: "1.5rem",
       }}>
-      {/* DNS Server Config */}
       <div style={cardStyle}>
         <div
           style={{
@@ -354,13 +360,22 @@ export default function DnsServer() {
                   fontFamily: "inherit",
                 }}>
                 {loading ? (
-                  <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+                  <Loader2
+                    size={12}
+                    style={{ animation: "spin 1s linear infinite" }}
+                  />
                 ) : running ? (
                   <Square size={12} />
                 ) : (
                   <Play size={12} />
                 )}
-                {loading ? (running ? "Stopping..." : "Starting...") : running ? "Stop" : "Start"}
+                {loading
+                  ? running
+                    ? "Stopping..."
+                    : "Starting..."
+                  : running
+                    ? "Stop"
+                    : "Start"}
               </button>
             </div>
           )}
@@ -487,10 +502,9 @@ export default function DnsServer() {
         </div>
       </div>
 
-      {/* Upstream Forwarders */}
       <div style={cardStyle}>
         <h2 style={cardTitleStyle}>
-          <Server size={18} />
+          <CircleArrowUp size={18} />
           Upstream Forwarders
         </h2>
 

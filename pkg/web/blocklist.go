@@ -10,6 +10,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/wiredlush/luna-dns/pkg/blocklist"
+	"github.com/wiredlush/luna-dns/pkg/engine"
 )
 
 const maxUploadSize = 15 << 20 // 15MB
@@ -55,8 +56,8 @@ func (s *Server) createBlocklistEntry(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid domain format"})
 	}
 
-	if s.engine != nil && s.engine.Running() {
-		s.engine.AddBlocklistEntry(req.Domain)
+	if eng := s.getEngine(); eng != nil && eng.Running() {
+		eng.AddBlocklistEntry(req.Domain)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(entry)
@@ -77,8 +78,8 @@ func (s *Server) deleteBlocklistEntry(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete entry"})
 	}
 
-	if s.engine != nil && s.engine.Running() {
-		s.engine.RemoveBlocklistEntry(entry.Domain)
+	if eng := s.getEngine(); eng != nil && eng.Running() {
+		eng.RemoveBlocklistEntry(entry.Domain)
 	}
 
 	return c.JSON(fiber.Map{"ok": true})
@@ -139,20 +140,17 @@ func (s *Server) uploadBlocklist(c *fiber.Ctx) error {
 }
 
 func (s *Server) syncBlocklist() {
-	s.mu.Lock()
-	eng := s.engine
-	s.mu.Unlock()
-
+	eng := s.getEngine()
 	if eng == nil || !eng.Running() {
 		return
 	}
 
-	s.loadBlocklistIntoEngine()
+	s.loadBlocklistIntoEngine(eng)
 }
 
-func (s *Server) loadBlocklistIntoEngine() {
+func (s *Server) loadBlocklistIntoEngine(eng *engine.Engine) {
 	log.Println("Loading blocklist entries from database...")
-	builder := s.engine.NewBlocklistBuilder()
+	builder := eng.NewBlocklistBuilder()
 	s.db.IterateBlocklistDomains(1000, func(domains []string) error {
 		builder.Add(domains)
 		return nil
