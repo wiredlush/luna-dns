@@ -19,6 +19,7 @@ func (e *Engine) forward(message *dns.Msg) {
 			continue
 		}
 		e.stats.BlockedQueries.Add(1)
+		e.stats.RecordBlocked()
 		log.Printf("Blocked: %s: %s\n", q.Name[:len(q.Name)-1], ip)
 
 		rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ip))

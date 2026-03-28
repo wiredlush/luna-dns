@@ -8,6 +8,7 @@ import (
 
 func (e *Engine) handler(w dns.ResponseWriter, r *dns.Msg) {
 	e.stats.TotalQueries.Add(1)
+	e.stats.RecordQuery()
 
 	if addr := w.RemoteAddr(); addr != nil {
 		host, _, err := net.SplitHostPort(addr.String())

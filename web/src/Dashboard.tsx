@@ -12,6 +12,7 @@ import {
   Clock,
   Database,
   Target,
+  BarChart3,
 } from "lucide-react";
 import { colors } from "./theme";
 
@@ -26,6 +27,7 @@ interface StatusData {
     cache_hit_rate: number;
     unique_clients: number;
     unique_domains: number;
+    time_series: { time: string; total: number; blocked: number; custom: number }[];
   };
   system: {
     cpu: number;
@@ -271,6 +273,255 @@ export default function Dashboard() {
             </div>
           );
         })}
+      </div>
+
+      {/* Queries over last 24 hours */}
+      {data.stats?.time_series && <QueryChart series={data.stats.time_series} />}
+    </div>
+  );
+}
+
+function niceMax(val: number): number {
+  if (val <= 0) return 10;
+  const mag = Math.pow(10, Math.floor(Math.log10(val)));
+  const norm = val / mag;
+  if (norm <= 1) return mag;
+  if (norm <= 2) return 2 * mag;
+  if (norm <= 5) return 5 * mag;
+  return 10 * mag;
+}
+
+function QueryChart({
+  series,
+}: {
+  series: { time: string; total: number; blocked: number; custom: number }[];
+}) {
+  const rawMax = Math.max(...series.map((p) => p.total), 1);
+  const maxVal = niceMax(rawMax);
+  const gridLines = 4;
+  const yLabels = Array.from({ length: gridLines + 1 }, (_, i) =>
+    Math.round((maxVal / gridLines) * (gridLines - i))
+  );
+
+  const labelEvery = 12;
+  const chartHeight = 160;
+  const yLabelWidth = 40;
+
+  return (
+    <div
+      style={{
+        background: "#fff",
+        borderRadius: "8px",
+        border: `1px solid ${colors.border}`,
+        padding: "1.25rem",
+      }}>
+      <div
+        style={{
+          fontSize: "0.7rem",
+          fontWeight: 600,
+          color: colors.navText,
+          textTransform: "uppercase",
+          letterSpacing: "0.03em",
+          marginBottom: "1rem",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.4rem",
+        }}>
+        <BarChart3 size={14} />
+        Queries over last 24 hours
+        <div style={{ flex: 1 }} />
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.25rem",
+            textTransform: "none",
+            fontWeight: 500,
+          }}>
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 2,
+              background: "#16a34a",
+              display: "inline-block",
+            }}
+          />
+          Allowed
+        </span>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.25rem",
+            textTransform: "none",
+            fontWeight: 500,
+            marginLeft: "0.5rem",
+          }}>
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 2,
+              background: "#dc2626",
+              display: "inline-block",
+            }}
+          />
+          Blocked
+        </span>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.25rem",
+            textTransform: "none",
+            fontWeight: 500,
+            marginLeft: "0.5rem",
+          }}>
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 2,
+              background: "#3b82f6",
+              display: "inline-block",
+            }}
+          />
+          Custom
+        </span>
+      </div>
+
+      <div style={{ display: "flex" }}>
+        {/* Y-axis labels */}
+        <div
+          style={{
+            width: yLabelWidth,
+            height: chartHeight,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            flexShrink: 0,
+          }}>
+          {yLabels.map((v, i) => (
+            <span
+              key={i}
+              style={{
+                fontSize: "0.6rem",
+                color: colors.navText,
+                fontVariantNumeric: "tabular-nums",
+                textAlign: "right",
+                paddingRight: "0.5rem",
+                lineHeight: 1,
+              }}>
+              {formatNumber(v)}
+            </span>
+          ))}
+        </div>
+
+        {/* Chart area with grid */}
+        <div
+          style={{
+            flex: 1,
+            height: chartHeight,
+            position: "relative",
+          }}>
+          {/* Grid lines */}
+          {yLabels.map((_, i) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: `${(i / gridLines) * 100}%`,
+                borderTop: `1px solid ${i === gridLines ? colors.border : "#f0f0f0"}`,
+              }}
+            />
+          ))}
+
+          {/* Bars */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-end",
+              height: "100%",
+              gap: 1,
+              position: "relative",
+              zIndex: 1,
+            }}>
+            {series.map((point, i) => {
+              const blockedH = (point.blocked / maxVal) * 100;
+              const customH = (point.custom / maxVal) * 100;
+              const allowedH = ((point.total - point.blocked - point.custom) / maxVal) * 100;
+
+              return (
+                <div
+                  key={i}
+                  style={{
+                    flex: "1 1 0",
+                    minWidth: 0,
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "flex-end",
+                  }}>
+                  <div
+                    style={{
+                      width: "100%",
+                      height: `${Math.max(allowedH, 0)}%`,
+                      background: "#16a34a",
+                      borderRadius: "1px 1px 0 0",
+                      minHeight: point.total - point.blocked - point.custom > 0 ? 1 : 0,
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: "100%",
+                      height: `${customH}%`,
+                      background: "#3b82f6",
+                      minHeight: point.custom > 0 ? 1 : 0,
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: "100%",
+                      height: `${blockedH}%`,
+                      background: "#dc2626",
+                      minHeight: point.blocked > 0 ? 1 : 0,
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* X-axis labels */}
+      <div
+        style={{
+          display: "flex",
+          marginTop: "0.4rem",
+          paddingTop: "0.3rem",
+          paddingLeft: yLabelWidth,
+          paddingRight: "1.5rem",
+        }}>
+        {series.map((point, i) => (
+          <div
+            key={i}
+            style={{
+              flex: "1 1 0",
+              minWidth: 0,
+              textAlign: "center",
+              fontSize: "0.6rem",
+              color: colors.navText,
+              fontVariantNumeric: "tabular-nums",
+            }}>
+            {point.time.endsWith(":00") && parseInt(point.time) % 2 === 0
+              ? point.time
+              : ""}
+          </div>
+        ))}
       </div>
     </div>
   );
