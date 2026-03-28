@@ -18,6 +18,7 @@ func (e *Engine) forward(message *dns.Msg) {
 		if ip == "" || err != nil {
 			continue
 		}
+		e.stats.BlockedQueries.Add(1)
 		log.Printf("Blocked: %s: %s\n", q.Name[:len(q.Name)-1], ip)
 
 		rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ip))
@@ -29,10 +30,12 @@ func (e *Engine) forward(message *dns.Msg) {
 
 	cachedAnswer := e.cache.Search(message.Question)
 	if cachedAnswer != nil {
+		e.stats.CacheHits.Add(1)
 		log.Printf("Entry found in cache: %v\n", cachedAnswer)
 		message.Answer = cachedAnswer
 		return
 	}
+	e.stats.CacheMisses.Add(1)
 
 	e.dnsMu.RLock()
 	forwardChain := e.buildForwardChain()

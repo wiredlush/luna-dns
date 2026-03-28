@@ -26,6 +26,8 @@ type Engine struct {
 	dns           []config.DNS
 	forwardIndex  int
 	server        *dns.Server
+	stats         Stats
+	startedAt     time.Time
 }
 
 func NewEngine(config *config.Config) (*Engine, error) {
@@ -55,6 +57,19 @@ func NewEngine(config *config.Config) (*Engine, error) {
 	}, nil
 }
 
+func (e *Engine) Stats() StatsSnapshot {
+	return e.stats.Snapshot()
+}
+
+func (e *Engine) CacheSize() int { return e.cache.Len() }
+
+func (e *Engine) Uptime() time.Duration {
+	if e.server == nil {
+		return 0
+	}
+	return time.Since(e.startedAt)
+}
+
 func (e *Engine) Running() bool {
 	return e.server != nil
 }
@@ -64,6 +79,7 @@ func (e *Engine) Start() error {
 		return fmt.Errorf("engine is already running")
 	}
 
+	e.startedAt = time.Now()
 	e.cache.Reset()
 	e.loadBlocklists()
 	go e.cache.CacheRoutine()
@@ -80,6 +96,7 @@ func (e *Engine) StartBackground() error {
 		return fmt.Errorf("engine is already running")
 	}
 
+	e.startedAt = time.Now()
 	e.cache.Reset()
 	e.loadBlocklists()
 	go e.cache.CacheRoutine()

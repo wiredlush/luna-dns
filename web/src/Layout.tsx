@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -18,39 +17,11 @@ const navItems = [
   { to: "/users", label: "Users", icon: Users },
 ];
 
-interface StatusData {
-  dns: { running: boolean };
-}
-
 export default function Layout({ onLogout }: { onLogout: () => void }) {
-  const [status, setStatus] = useState<StatusData | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    const poll = () => {
-      fetch("/api/status", { credentials: "same-origin" })
-        .then((r) => r.json())
-        .then((data) => {
-          if (active) setStatus(data);
-        })
-        .catch(() => {
-          if (active) setStatus(null);
-        });
-    };
-    poll();
-    const id = setInterval(poll, 10000);
-    return () => {
-      active = false;
-      clearInterval(id);
-    };
-  }, []);
-
   async function handleLogout() {
     await fetch("/api/logout", { method: "POST", credentials: "same-origin" });
     onLogout();
   }
-
-  const dnsOnline = status?.dns?.running ?? false;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -110,35 +81,6 @@ export default function Layout({ onLogout }: { onLogout: () => void }) {
               </NavLink>
             ))}
           </nav>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.4rem",
-              marginRight: "1rem",
-              fontSize: "0.7rem",
-              fontWeight: 600,
-              color: dnsOnline ? "#16a34a" : "#dc2626",
-              background: "transparent",
-              border: `1px solid ${colors.border}`,
-              borderRadius: "6px",
-              padding: "0.4rem 0.6rem",
-            }}>
-            <span
-              style={{
-                display: "inline-block",
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: dnsOnline ? "#16a34a" : "#dc2626",
-                animation: dnsOnline
-                  ? "pulse-dot 1.5s ease-in-out infinite"
-                  : "none",
-              }}
-            />
-            DNS {dnsOnline ? "Online" : "Offline"}
-          </div>
 
           <button
             onClick={handleLogout}

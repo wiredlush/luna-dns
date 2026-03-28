@@ -40,6 +40,12 @@ func (c *Cache) Reset() {
 	c.stopCh = make(chan struct{})
 }
 
+func (c *Cache) Len() int {
+	c.Lock()
+	defer c.Unlock()
+	return len(c.entries)
+}
+
 func (c *Cache) Search(question []dns.Question) []dns.RR {
 	c.Lock()
 	defer c.Unlock()
